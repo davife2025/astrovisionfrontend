@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import * as  AstroDAO  from '../AstroDAO.json';
+import { ABI } from '../contracts/AstroDAO-ABI';
 
 const ABI = AstroDAO.abi;
 const UserProfile = ({ contractAddress, userAddress }) => {

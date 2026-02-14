@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import * as AstroDAO  from '../AstroDAO.json';
+import { ABI } from '../contracts/AstroDAO-ABI';
 import CreateProposalForm from './CreateProposalForm';
 import ProposalCard from './ProposalCard';
 
