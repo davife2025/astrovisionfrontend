@@ -3,10 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { AstroDAO } from '../AstroDAO.json';
+import  AstroDAO  from '../AstroDAO.json';
 import CreateProposalForm from './CreateProposalForm';
 import ProposalCard from './ProposalCard';
 
+const ABI = AstroDAO.abi;
 const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || '0x...';
 const CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID) || 56;
 
@@ -87,7 +88,7 @@ const DAODashboard = () => {
       setLoading(true);
       
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, AstroDAO, provider);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
       // Load user stats
       const [reputation, voteCount, totalCount, propCount, week, activeTheme] = await Promise.all([
