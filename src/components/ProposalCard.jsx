@@ -3,8 +3,9 @@
 
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
-import { AstroDAO_ABI } from '../contracts/AstroDAO-ABI';
+import { AstroDAO } from '../AstroDAO.json';
 
+const ABI = AstroDAO.abi;
 const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess }) => {
   const [voting, setVoting] = useState(false);
   const [error, setError] = useState('');
@@ -47,7 +48,7 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       // Call vote function with proposalId and choice (0=AGAINST, 1=FOR, 2=ABSTAIN)
       const tx = await contract.vote(
@@ -86,7 +87,7 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const tx = await contract.finalizeProposal(proposal.id);
       await tx.wait();
@@ -103,7 +104,7 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const tx = await contract.executeProposal(proposal.id);
       await tx.wait();

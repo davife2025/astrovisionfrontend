@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { AstroDAO_ABI } from '../contracts/AstroDAO-ABI';
+import { AstroDAO } from '../AstroDAO.json';
 import CreateProposalForm from './CreateProposalForm';
 import ProposalCard from './ProposalCard';
 
@@ -87,7 +87,7 @@ const DAODashboard = () => {
       setLoading(true);
       
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, AstroDAO_ABI, provider);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, AstroDAO, provider);
 
       // Load user stats
       const [reputation, voteCount, totalCount, propCount, week, activeTheme] = await Promise.all([

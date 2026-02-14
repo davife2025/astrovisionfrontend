@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { AstroDAO_ABI } from '../contracts/AstroDAO-ABI';
+import { AstroDAO } from '../AstroDAO.json';
 
+const ABI = AstroDAO.abi;
 const UserProfile = ({ contractAddress, userAddress }) => {
   const [reputation, setReputation] = useState(0);
   const [voteCount, setVoteCount] = useState(0);
@@ -21,7 +22,7 @@ const UserProfile = ({ contractAddress, userAddress }) => {
   const loadUserData = async () => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, provider);
+      const contract = new ethers.Contract(contractAddress, AstroDAO, provider);
 
       const [rep, votes, delegateAddr] = await Promise.all([
         contract.userReputation(userAddress),
@@ -53,7 +54,7 @@ const UserProfile = ({ contractAddress, userAddress }) => {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const tx = await contract.delegate(delegateInput);
       console.log('Delegation transaction:', tx.hash);
@@ -85,7 +86,7 @@ const UserProfile = ({ contractAddress, userAddress }) => {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const tx = await contract.undelegate();
       console.log('Undelegation transaction:', tx.hash);

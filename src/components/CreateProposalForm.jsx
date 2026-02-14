@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
-import { AstroDAO_ABI } from '../contracts/AstroDAO-ABI';
+import { AstroDAO } from '../contracts/AstroDAO-ABI';
 
 const CreateProposalForm = ({ contractAddress, userReputation, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -56,7 +56,7 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess }) => {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, AstroDAO_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, AstroDAO, signer);
 
       // Call createProposal
       const tx = await contract.createProposal(
