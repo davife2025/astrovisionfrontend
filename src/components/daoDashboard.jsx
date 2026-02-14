@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import  AstroDAO  from '../AstroDAO.json';
+import * as AstroDAO  from '../AstroDAO.json';
 import CreateProposalForm from './CreateProposalForm';
 import ProposalCard from './ProposalCard';
 
