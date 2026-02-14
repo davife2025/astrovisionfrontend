@@ -7,7 +7,7 @@ import { ABI } from '../contracts/AstroDAO-ABI';
 import CreateProposalForm from './CreateProposalForm';
 import ProposalCard from './ProposalCard';
 
-const ABI = AstroDAO.abi;
+
 const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || '0x...';
 const CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID) || 56;
 

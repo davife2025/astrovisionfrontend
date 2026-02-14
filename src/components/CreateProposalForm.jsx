@@ -3,8 +3,7 @@
 
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
-import * as AstroDAO  from '../AstroDAO.json';
-const ABI = AstroDAO.abi;
+import { ABI } from '../contracts/AstroDAO-ABI';
 
 const CreateProposalForm = ({ contractAddress, userReputation, onSuccess }) => {
   const [formData, setFormData] = useState({

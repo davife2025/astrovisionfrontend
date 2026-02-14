@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
 
-const ABI = AstroDAO.abi;
+
 const UserProfile = ({ contractAddress, userAddress }) => {
   const [reputation, setReputation] = useState(0);
   const [voteCount, setVoteCount] = useState(0);
