@@ -1,4 +1,4 @@
-// hardhat.config.js - OPTIMIZED FOR BNB CHAIN MAINNET
+// hardhat.config.js - FIXED for Etherscan V2 API
 
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-verify");
@@ -11,46 +11,60 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200, // Optimized for lower deployment cost
+        runs: 200,
       },
-      viaIR: false, // Disabled for faster compilation
+      evmVersion: "paris",
     },
   },
   
   networks: {
-    // BNB Chain Mainnet (Your $1 deployment)
+    // BNB Chain Mainnet
     bscMainnet: {
       url: process.env.RPC_URL || "https://bsc-dataseed1.binance.org/",
       chainId: 56,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 3000000000, // 3 gwei (adjust if needed)
+      gasPrice: 3000000000,
       gas: 3000000,
-      timeout: 60000, // 60 seconds timeout
+      timeout: 60000,
     },
     
-    // BNB Testnet (for testing first - RECOMMENDED!)
+    // BNB Testnet
     bscTestnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       chainId: 97,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 10000000000, // 10 gwei for testnet
+      gasPrice: 10000000000,
     },
     
-    // Local hardhat network for testing
+    // Local hardhat network
     hardhat: {
       chainId: 31337,
     },
   },
   
-  // Contract verification on BSCScan
+  // ✅ FIXED: Etherscan V2 API format
   etherscan: {
     apiKey: {
       bsc: process.env.BSCSCAN_API_KEY || "",
       bscTestnet: process.env.BSCSCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "bscMainnet",
+        chainId: 56,
+        urls: {
+          apiURL: "https://api.bscscan.com/api",
+          browserURL: "https://bscscan.com"
+        }
+      }
+    ]
   },
   
-  // Path configuration
+  // Disable Sourcify (optional)
+  sourcify: {
+    enabled: false
+  },
+  
   paths: {
     sources: "./contracts",
     tests: "./test",
@@ -58,7 +72,6 @@ module.exports = {
     artifacts: "./artifacts"
   },
   
-  // Mocha test timeout
   mocha: {
     timeout: 40000
   }

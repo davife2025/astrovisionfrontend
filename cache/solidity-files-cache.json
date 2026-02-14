@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\USER\\Desktop\\Astro\\my-app\\contracts\\AstroDAOSecure.sol": {
-      "lastModificationDate": 1770951609495,
-      "contentHash": "287481c2d14fe135ec6688c6e8fb95f3",
+      "lastModificationDate": 1770973581690,
+      "contentHash": "257790c0c9327ba0f8d9536826dd5fce",
       "sourceName": "contracts/AstroDAOSecure.sol",
       "solcConfig": {
         "version": "0.8.20",

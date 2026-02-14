@@ -1,0 +1,21 @@
+{
+  "network": "BNB Chain Mainnet",
+  "chainId": 56,
+  "deployer": "0xCE640c9955Adc21B1E4Fb265210df8d2b81E5c2a",
+  "deployedAt": "2026-02-14T12:22:40.740Z",
+  "contract": {
+    "address": "0xeC7b732E8F8e2D19D244f2C6cCE35127C824358c",
+    "name": "AstroDAO",
+    "version": "1.0.0-mainnet"
+  },
+  "deployment": {
+    "estimatedCost": "0.007892 BNB",
+    "actualCost": "0.007826 BNB",
+    "gasUsed": "2630538"
+  },
+  "links": {
+    "bscscan": "https://bscscan.com/address/0xeC7b732E8F8e2D19D244f2C6cCE35127C824358c",
+    "verify": "https://bscscan.com/address/0xeC7b732E8F8e2D19D244f2C6cCE35127C824358c#code",
+    "write": "https://bscscan.com/address/0xeC7b732E8F8e2D19D244f2C6cCE35127C824358c#writeContract"
+  }
+}
