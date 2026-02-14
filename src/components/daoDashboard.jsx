@@ -27,12 +27,13 @@ const DAODashboard = () => {
   useEffect(() => {
     connectWallet();
   }, []);
-
-  useEffect(() => {
-    if (account) {
-      loadDashboardData();
-    }
-  }, [account]);
+  
+useEffect(() => {
+  if (account) {
+    loadDashboardData();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [account]);
 
   const connectWallet = async () => {
     try {
