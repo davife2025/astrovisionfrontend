@@ -58,7 +58,8 @@ h1, h2, h3, h4, h5, h6 {
 body {
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1a2e 100%);
   color: var(--text-main);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 400;
@@ -69,8 +70,8 @@ body {
 .App {
   display: flex;
   flex-direction: column;
-  height: 80vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* === SPINNER ANIMATION === */
@@ -1521,22 +1522,30 @@ button {
   min-height: calc(100vh - 80px);
 }
 
-/* ===== TRANSPARENT CARDS ===== */
+/* ===== GLASS-MORPHISM CARDS =====
+   Base styles for cards. DAO components use dao-glass-theme.css
+   which has !important and will override these.
+*/
 .ui-panel,
 .response-card,
 .space-container,
-.dao-container,
 .create-post,
 .community-post,
 .planet-card,
 .lesson-card,
 .input-area {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.025);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px;
+  color: #ffffff;
+}
+
+/* DAO container - let dao-glass-theme.css handle DAO-specific styling */
+.dao-container {
+  /* Intentionally minimal - dao-glass-theme.css will apply specific styles */
   color: #ffffff;
 }
 
