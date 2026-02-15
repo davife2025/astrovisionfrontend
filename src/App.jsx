@@ -12,7 +12,7 @@ import SignIn from './pages/signin';
 import DAO from './pages/dao';
 import SpaceBackground from './components/spaceBackground';
 import Playground from './pages/playground';
-import DAODashboard from './components/DaoDashboard';
+import DAODashboard from './components/daoDashboard';
 
 
 // Services
