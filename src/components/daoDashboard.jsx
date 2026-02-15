@@ -341,6 +341,7 @@ const DAODashboard = () => {
             {showCreateForm && isValidContractAddress(CONTRACT_ADDRESS) && (
               <CreateProposalForm
                 contractAddress={CONTRACT_ADDRESS}
+                 userReputation={userReputation} 
                 onClose={() => setShowCreateForm(false)}
                 onSuccess={() => {
                   setShowCreateForm(false);

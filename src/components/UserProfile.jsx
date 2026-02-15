@@ -22,7 +22,7 @@ const UserProfile = ({ contractAddress, userAddress }) => {
   const loadUserData = async () => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, AstroDAO, provider);
+      const contract = new ethers.Contract(contractAddress, ABI, provider);
 
       const [rep, votes, delegateAddr] = await Promise.all([
         contract.userReputation(userAddress),
