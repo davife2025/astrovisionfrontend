@@ -501,17 +501,6 @@ const ProfilePanel = ({ account, userReputation, userVoteCount, contractAddress,
           </div>
           <p className="text-slate-500 text-xs mt-1">{repPct}% of maximum</p>
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl border border-indigo-500/20" style={{ background: 'rgba(99,102,241,0.08)' }}>
-            <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">Votes Cast</p>
-            <p className="text-3xl font-bold text-indigo-300" style={{ fontFamily: 'Georgia, serif' }}>{userVoteCount}</p>
-          </div>
-          <div className="p-4 rounded-xl border border-purple-500/20" style={{ background: 'rgba(139,92,246,0.08)' }}>
-            <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-1">Reputation</p>
-            <p className="text-3xl font-bold text-purple-300" style={{ fontFamily: 'Georgia, serif' }}>{userReputation}</p>
-          </div>
-        </div>
       </div>
 
       {/* Delegation card */}

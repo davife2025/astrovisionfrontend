@@ -1,4 +1,4 @@
-// hardhat.config.js - FIXED for Etherscan V2 API
+// hardhat.config.js - Fixed network name matching
 
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-verify");
@@ -16,10 +16,10 @@ module.exports = {
       evmVersion: "paris",
     },
   },
-  
+
   networks: {
-    // BNB Chain Mainnet
-    bscMainnet: {
+    // BNB Chain Mainnet — key name "bsc" matches etherscan.apiKey.bsc below
+    bsc: {
       url: process.env.RPC_URL || "https://bsc-dataseed1.binance.org/",
       chainId: 56,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
@@ -27,7 +27,7 @@ module.exports = {
       gas: 3000000,
       timeout: 60000,
     },
-    
+
     // BNB Testnet
     bscTestnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
@@ -35,43 +35,47 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gasPrice: 10000000000,
     },
-    
-    // Local hardhat network
+
+    // Local
     hardhat: {
       chainId: 31337,
     },
   },
-  
-  // ✅ FIXED: Etherscan V2 API format
+
   etherscan: {
-    apiKey: {
-      bsc: process.env.BSCSCAN_API_KEY || "",
-      bscTestnet: process.env.BSCSCAN_API_KEY || "",
-    },
+    // ✅ Etherscan V2: single API key, no network-specific keys
+    apiKey: process.env.BSCSCAN_API_KEY || "",
     customChains: [
       {
-        network: "bscMainnet",
+        network: "bsc",
         chainId: 56,
         urls: {
           apiURL: "https://api.bscscan.com/api",
           browserURL: "https://bscscan.com"
         }
+      },
+      {
+        network: "bscTestnet",
+        chainId: 97,
+        urls: {
+          apiURL: "https://api-testnet.bscscan.com/api",
+          browserURL: "https://testnet.bscscan.com"
+        }
       }
     ]
   },
-  
-  // Disable Sourcify (optional)
+
   sourcify: {
     enabled: false
   },
-  
+
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"
   },
-  
+
   mocha: {
     timeout: 40000
   }
