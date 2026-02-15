@@ -51,10 +51,6 @@ const DAODashboard = () => {
   const [activeView, setActiveView]             = useState('proposals'); // proposals | profile
   const [dashboardError, setDashboardError]     = useState('');
 
-
-  console.log(process.env.REACT_APP_DAO_CONTRACT_ADDRESS)
-
-
   useEffect(() => {
     if (account) loadDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,7 +213,6 @@ const DAODashboard = () => {
         <div className="max-w-md w-full">
           <div className="rounded-3xl p-8 border border-white/10 text-center backdrop-blur-lg"
             style={{ background: 'rgba(255,255,255,0.05)' }}>
-            </div>
 
             <h1 className="text-2xl font-bold text-white mb-3">AstroDAO</h1>
             <p className="text-slate-400 mb-6 text-sm">
@@ -233,8 +228,8 @@ const DAODashboard = () => {
 
             <button onClick={connectWallet} disabled={connecting}
               className="w-full py-3.5 rounded-xl font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-              style={{ background: 'linear-gradient(135deg, #0c0c0c, #000000)' }}>
-              {connecting ? 'Connecting...' : 'Connect Wallet'}
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+              {connecting ? 'Connecting...' : '🔗 Connect Wallet'}
             </button>
 
             {!isValidContractAddress(CONTRACT_ADDRESS) && (
@@ -245,6 +240,7 @@ const DAODashboard = () => {
             )}
           </div>
         </div>
+      </div>
     );
   }
 
@@ -320,8 +316,9 @@ const DAODashboard = () => {
                 <p className="text-3xl font-bold text-white">{userVoteCount}</p>
               </div>
               <div className="rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-1">Total Voters</p>
-                <p className="text-3xl font-bold text-white">{totalVoters}</p>
+                <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-1">Total Proposals</p>
+                <p className="text-3xl font-bold text-white">{proposalCount}</p>
+                <p className="text-slate-500 text-xs mt-1">{totalVoters} voters</p>
               </div>
               <div className="rounded-2xl p-5 border border-white/10 flex items-center justify-center"
                 style={{ background: 'rgba(255,255,255,0.03)' }}>
