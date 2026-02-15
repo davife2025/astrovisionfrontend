@@ -1,5 +1,5 @@
 // src/components/DAODashboard.jsx
-// Fixed: ENS error resolved by validating CONTRACT_ADDRESS before use
+// Fixed: ENS error resolved + proper contract validation
 
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -12,7 +12,7 @@ const CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID) || 56;
 
 // ─── ENS FIX: Validate address before using with ethers ──────────────────────
 const isValidContractAddress = (addr) => {
-  return addr && addr !== '0x...' && addr !== '' && ethers.isAddress(addr);
+  return addr && addr !== '0x...' && addr !== '' && addr !== 'undefined' && ethers.isAddress(addr);
 };
 
 const PROPOSAL_TYPES = [
@@ -49,6 +49,7 @@ const DAODashboard = () => {
   const [connectionError, setConnectionError]   = useState('');
   const [connecting, setConnecting]             = useState(false);
   const [activeView, setActiveView]             = useState('proposals'); // proposals | profile
+  const [dashboardError, setDashboardError]     = useState('');
 
   useEffect(() => {
     if (account) loadDashboardData();
@@ -112,26 +113,51 @@ const DAODashboard = () => {
 
   // ─── LOAD DATA ──────────────────────────────────────────────────────────────
   const loadDashboardData = async () => {
-    // ✅ ENS FIX: Guard against invalid/placeholder contract address
+    setDashboardError('');
+    
+    // ✅ Validation 1: Check contract address
     if (!isValidContractAddress(CONTRACT_ADDRESS)) {
-      console.warn('⚠️ DAO contract address not configured. Set REACT_APP_DAO_CONTRACT_ADDRESS in .env');
+      const errorMsg = 'DAO contract not configured. Add REACT_APP_DAO_CONTRACT_ADDRESS to .env file';
+      console.warn('⚠️', errorMsg);
+      setDashboardError(errorMsg);
       setProposals([]);
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Validation 2: Check account is valid
+    if (!account || !ethers.isAddress(account)) {
+      console.warn('⚠️ Invalid account address');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      
+      // ✅ Validation 3: Create provider safely
+      if (!window.ethereum) {
+        throw new Error('MetaMask not found');
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // ✅ Validation 4: Check if contract exists at address
+      const code = await provider.getCode(CONTRACT_ADDRESS);
+      if (code === '0x') {
+        throw new Error(`No contract deployed at ${CONTRACT_ADDRESS.slice(0, 10)}...`);
+      }
+
+      // ✅ Now safe to create contract instance
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
       const [reputation, voteCount, totalCount, propCount, week, activeTheme] = await Promise.all([
-        contract.userReputation(account),
-        contract.userVoteCount(account),
-        contract.totalVoterCount(),
-        contract.proposalCount(),
-        contract.currentWeek(),
-        contract.activeWeeklyTheme(),
+        contract.userReputation(account).catch(() => 0n),
+        contract.userVoteCount(account).catch(() => 0n),
+        contract.totalVoterCount().catch(() => 0n),
+        contract.proposalCount().catch(() => 0n),
+        contract.currentWeek().catch(() => 0n),
+        contract.activeWeeklyTheme().catch(() => 0n),
       ]);
 
       setUserReputation(Number(reputation));
@@ -164,8 +190,10 @@ const DAODashboard = () => {
         }
       }
       setProposals(proposalsList.reverse());
+      setDashboardError('');
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      setDashboardError(error.message || 'Failed to load DAO data');
     } finally {
       setLoading(false);
     }
@@ -180,178 +208,101 @@ const DAODashboard = () => {
   // ─── NOT CONNECTED ──────────────────────────────────────────────────────────
   if (!account) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4"
-        style={{ background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)' }}>
-
-        {/* Stars background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          {[...Array(60)].map((_, i) => (
-            <div key={i} className="absolute rounded-full bg-white"
-              style={{
-                width: Math.random() * 2 + 1 + 'px',
-                height: Math.random() * 2 + 1 + 'px',
-                top: Math.random() * 100 + '%',
-                left: Math.random() * 100 + '%',
-                opacity: Math.random() * 0.6 + 0.2,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10 text-center max-w-md w-full">
-          {/* Logo / icon */}
-          <div className="mb-8 flex justify-center">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 40px rgba(99,102,241,0.4)' }}>
-              <span className="text-4xl">🌌</span>
+      <div className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="max-w-md w-full">
+          <div className="rounded-3xl p-8 border border-white/10 text-center backdrop-blur-lg"
+            style={{ background: 'rgba(255,255,255,0.05)' }}>
+            
+            <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
             </div>
-          </div>
 
-          <h1 className="text-4xl font-bold text-white mb-2" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.02em' }}>
-            AstroDAO
-          </h1>
-          <p className="text-indigo-300 mb-10 text-sm tracking-widest uppercase">
-            Community Governance · BNB Chain
-          </p>
+            <h1 className="text-2xl font-bold text-white mb-3">AstroDAO</h1>
+            <p className="text-slate-400 mb-6 text-sm">
+              Connect your wallet to participate in governance
+            </p>
 
-          {/* Error */}
-          {connectionError && (
-            <div className="mb-6 p-4 rounded-xl border border-red-500/30 bg-red-900/20 text-left">
-              <p className="text-red-300 text-sm flex items-start gap-2">
-                <span className="mt-0.5">⚠️</span>
-                <span>{connectionError}</span>
-              </p>
-            </div>
-          )}
+            {connectionError && (
+              <div className="mb-4 p-3 rounded-xl border border-red-500/30 text-red-300 text-sm"
+                style={{ background: 'rgba(239,68,68,0.1)' }}>
+                {connectionError}
+              </div>
+            )}
 
-          {/* Connect button */}
-          <button onClick={connectWallet} disabled={connecting}
-            className="w-full py-4 px-8 rounded-2xl font-semibold text-white text-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: connecting ? 'rgba(99,102,241,0.4)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              boxShadow: connecting ? 'none' : '0 0 30px rgba(99,102,241,0.35)',
-            }}>
-            {connecting ? (
-              <span className="flex items-center justify-center gap-3">
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                </svg>
-                Connecting...
-              </span>
-            ) : '🔗 Connect MetaMask'}
-          </button>
+            <button onClick={connectWallet} disabled={connecting}
+              className="w-full py-3.5 rounded-xl font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              style={{ background: 'linear-gradient(135deg, #0c0c0c, #000000)' }}>
+              {connecting ? 'Connecting...' : 'Connect Wallet'}
+            </button>
 
-          {/* Info cards */}
-          <div className="mt-8 grid grid-cols-2 gap-3 text-left">
-            <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-900/10">
-              <p className="text-indigo-300 text-xs font-semibold mb-2 uppercase tracking-wider">Before connecting</p>
-              <ul className="text-slate-400 text-xs space-y-1">
-                <li>• Unlock MetaMask</li>
-                <li>• Have an account ready</li>
-                <li>• Approve the request</li>
-              </ul>
-            </div>
-            <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-900/10">
-              <p className="text-purple-300 text-xs font-semibold mb-2 uppercase tracking-wider">No MetaMask?</p>
-              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer"
-                className="text-indigo-400 hover:text-indigo-300 text-xs font-medium transition-colors">
-                Install MetaMask →
-              </a>
-              <p className="text-slate-500 text-xs mt-2">Free browser extension</p>
-            </div>
+            {!isValidContractAddress(CONTRACT_ADDRESS) && (
+              <div className="mt-4 p-3 rounded-xl border border-yellow-500/30 text-yellow-300 text-xs"
+                style={{ background: 'rgba(245,158,11,0.08)' }}>
+                ⚠️ Contract address not configured. Set REACT_APP_DAO_CONTRACT_ADDRESS in .env
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // ─── CONNECTED DASHBOARD ────────────────────────────────────────────────────
+  // ─── CONNECTED ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)' }}>
-
-      {/* Contract not configured warning */}
-      {!isValidContractAddress(CONTRACT_ADDRESS) && (
-        <div className="bg-amber-900/40 border-b border-amber-500/30 px-4 py-3 text-center">
-          <p className="text-amber-300 text-sm">
-            ⚠️ <strong>Contract not configured.</strong> Set <code className="bg-amber-900/50 px-1 rounded">REACT_APP_DAO_CONTRACT_ADDRESS</code> in your <code className="bg-amber-900/50 px-1 rounded">.env</code> file to enable DAO features.
-          </p>
+    <div className="min-h-screen p-4 md:p-8"
+      style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">AstroDAO</h1>
+            <p className="text-slate-400 text-sm">Connected: {shortAddress(account)}</p>
+          </div>
+          
+          <div className="flex gap-3">
+            <button onClick={() => setActiveView('proposals')}
+              className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                activeView === 'proposals'
+                  ? 'text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+              style={activeView === 'proposals' ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : {}}>
+              Proposals
+            </button>
+            <button onClick={() => setActiveView('profile')}
+              className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                activeView === 'profile'
+                  ? 'text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+              style={activeView === 'profile' ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' } : {}}>
+              Profile
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* ── TOP NAV BAR ── */}
-      <div className="sticky top-0 z-50 border-b border-white/5"
-        style={{ background: 'rgba(10,10,26,0.85)', backdropFilter: 'blur(20px)' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🌌</span>
+        {/* Error Banner */}
+        {dashboardError && (
+          <div className="mb-6 p-4 rounded-xl border border-red-500/30 text-red-300 text-sm flex items-start gap-3"
+            style={{ background: 'rgba(239,68,68,0.1)' }}>
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
             <div>
-              <h1 className="text-white font-bold text-lg leading-none" style={{ fontFamily: 'Georgia, serif' }}>AstroDAO</h1>
-              <p className="text-indigo-400 text-xs">Week #{currentWeek}</p>
-            </div>
-          </div>
-
-          {/* Nav tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            {[
-              { id: 'proposals', label: '📋 Proposals' },
-              { id: 'profile',   label: '👤 Profile' },
-            ].map(tab => (
-              <button key={tab.id} onClick={() => { setActiveView(tab.id); setShowCreateForm(false); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  activeView === tab.id
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-white'
-                }`}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Wallet badge */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10"
-            style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-slate-300 text-sm font-mono">{shortAddress(account)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-
-        {/* ── STATS GRID ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Your Reputation', value: userReputation, sub: '/ 10,000 max', color: '#818cf8', icon: '⭐' },
-            { label: 'Votes Cast',      value: userVoteCount,  sub: '+1 rep per vote', color: '#34d399', icon: '🗳️' },
-            { label: 'Total Proposals', value: proposalCount,  sub: `Week #${currentWeek}`, color: '#a78bfa', icon: '📋' },
-            { label: 'Total Voters',    value: totalVoters,    sub: 'Unique participants', color: '#60a5fa', icon: '👥' },
-          ].map((stat) => (
-            <div key={stat.label} className="relative overflow-hidden rounded-2xl p-5 border border-white/5"
-              style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div className="absolute top-3 right-3 text-xl opacity-40">{stat.icon}</div>
-              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3">{stat.label}</p>
-              <p className="text-4xl font-bold" style={{ color: stat.color, fontFamily: 'Georgia, serif' }}>{stat.value}</p>
-              <p className="text-slate-500 text-xs mt-1">{stat.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── ACTIVE WEEKLY THEME BANNER ── */}
-        {activeWeeklyTheme > 0 && (
-          <div className="mb-8 p-5 rounded-2xl border border-purple-500/30 flex items-center gap-4"
-            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))' }}>
-            <span className="text-3xl">🌟</span>
-            <div>
-              <p className="text-purple-300 text-xs font-semibold uppercase tracking-wider mb-1">Active Weekly Theme</p>
-              <p className="text-white font-medium">Proposal #{activeWeeklyTheme} is the featured theme this week</p>
+              <p className="font-medium mb-1">Configuration Error</p>
+              <p>{dashboardError}</p>
             </div>
           </div>
         )}
 
-        {/* ── PROFILE VIEW ── */}
-        {activeView === 'profile' && (
+        {/* Profile View */}
+        {activeView === 'profile' ? (
           <ProfilePanel
             account={account}
             userReputation={userReputation}
@@ -359,73 +310,92 @@ const DAODashboard = () => {
             contractAddress={CONTRACT_ADDRESS}
             isValidAddress={isValidContractAddress(CONTRACT_ADDRESS)}
           />
-        )}
-
-        {/* ── PROPOSALS VIEW ── */}
-        {activeView === 'proposals' && (
+        ) : (
+          /* Proposals View */
           <>
-            {/* Action bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  {showCreateForm ? 'New Proposal' : 'Governance Proposals'}
-                </h2>
-                <p className="text-slate-500 text-sm mt-0.5">
-                  {showCreateForm ? 'Submit a new proposal to the community' : `${filteredProposals.length} proposals found`}
-                </p>
+            {/* Stats & Create Button */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">Your Reputation</p>
+                <p className="text-3xl font-bold text-white">{userReputation}</p>
               </div>
-              <button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                disabled={userReputation < 3}
-                title={userReputation < 3 ? 'Need 3 reputation to create proposals' : ''}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  background: showCreateForm ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  boxShadow: showCreateForm ? 'none' : '0 0 20px rgba(99,102,241,0.3)',
-                  color: 'white',
-                }}>
-                {showCreateForm ? '← Back to Proposals' : '+ New Proposal'}
-              </button>
+              <div className="rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(139,92,246,0.1)' }}>
+                <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-1">Votes Cast</p>
+                <p className="text-3xl font-bold text-white">{userVoteCount}</p>
+              </div>
+              <div className="rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(59,130,246,0.1)' }}>
+                <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-1">Total Voters</p>
+                <p className="text-3xl font-bold text-white">{totalVoters}</p>
+              </div>
+              <div className="rounded-2xl p-5 border border-white/10 flex items-center justify-center"
+                style={{ background: 'rgba(255,255,255,0.03)' }}>
+                {userReputation >= 3 && isValidContractAddress(CONTRACT_ADDRESS) ? (
+                  <button onClick={() => setShowCreateForm(true)}
+                    className="w-full h-full py-3 rounded-xl font-medium text-sm text-white transition-all hover:shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                    + Create Proposal
+                  </button>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-slate-500 text-xs">Need {Math.max(0, 3 - userReputation)} more reputation</p>
+                    <p className="text-slate-600 text-xs mt-1">to create proposals</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Create proposal form */}
-            {showCreateForm ? (
+            {/* Create Form Modal */}
+            {showCreateForm && isValidContractAddress(CONTRACT_ADDRESS) && (
               <CreateProposalForm
                 contractAddress={CONTRACT_ADDRESS}
-                userReputation={userReputation}
-                onSuccess={() => { setShowCreateForm(false); loadDashboardData(); }}
+                onClose={() => setShowCreateForm(false)}
+                onSuccess={() => {
+                  setShowCreateForm(false);
+                  loadDashboardData();
+                }}
+                currentWeek={currentWeek}
+                activeWeeklyTheme={activeWeeklyTheme}
               />
+            )}
+
+            {/* Filter Bar */}
+            <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+              {PROPOSAL_TYPES.map(({ value, label }) => (
+                <button key={value} onClick={() => setFilterType(value)}
+                  className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+                    filterType === value
+                      ? 'text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  style={filterType === value ? { background: 'rgba(99,102,241,0.2)' } : {}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Proposals List */}
+            {loading ? (
+              <div className="text-center py-20">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+                <p className="text-slate-400 mt-4">Loading proposals...</p>
+              </div>
             ) : (
               <>
-                {/* Filter tabs */}
-                <div className="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  {PROPOSAL_TYPES.map(type => (
-                    <button key={type.value} onClick={() => setFilterType(type.value)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        filterType === type.value
-                          ? 'bg-indigo-600 text-white shadow'
-                          : 'text-slate-400 hover:text-white'
-                      }`}>
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Proposals list */}
-                {loading ? (
-                  <div className="text-center py-20">
-                    <div className="inline-block w-12 h-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-4" />
-                    <p className="text-slate-400">Loading proposals from chain...</p>
-                  </div>
-                ) : filteredProposals.length === 0 ? (
+                {filteredProposals.length === 0 ? (
                   <div className="text-center py-20 rounded-2xl border border-white/5"
                     style={{ background: 'rgba(255,255,255,0.02)' }}>
-                    <p className="text-4xl mb-4">🔭</p>
-                    <p className="text-slate-400 font-medium mb-2">No proposals found</p>
+                    <svg className="w-16 h-16 text-slate-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-slate-400 text-lg mb-2">
+                      {filterType === 'all'
+                        ? 'No proposals yet'
+                        : `No ${PROPOSAL_TYPES.find(t => t.value === filterType)?.label} proposals`}
+                    </p>
                     <p className="text-slate-600 text-sm">
                       {!isValidContractAddress(CONTRACT_ADDRESS)
-                        ? 'Configure your contract address to see proposals'
+                        ? 'Contract not configured'
                         : userReputation >= 3
                         ? 'Be the first to create one!'
                         : 'Earn 3 reputation to create proposals'}
@@ -520,7 +490,6 @@ const ProfilePanel = ({ account, userReputation, userVoteCount, contractAddress,
   };
 
   const repPct = Math.min((userReputation / 10000) * 100, 100).toFixed(1);
- // const shortAddr = (a) => `${a.slice(0, 6)}...${a.slice(-4)}`;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
