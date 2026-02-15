@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
-import './dao-components-glass.css';
+import './dao-glass-theme.css';
 
 const UserProfile = ({ contractAddress, userAddress }) => {
   const [reputation, setReputation]       = useState(0);

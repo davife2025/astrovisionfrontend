@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
-import './dao-components-glass.css';
+import './dao-glass-theme.css';
 
 const PROPOSAL_TYPE_LABELS = {
   0: 'Weekly Theme', 1: 'Research Discovery',

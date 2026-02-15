@@ -1,24 +1,10 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* =====================================================
+   ASTROVISION TYPOGRAPHY
+   Orbitron — titles, nav, badges, labels (sci-fi geometric)
+   Exo 2    — body text, inputs, cards, paragraphs (clean techy)
+   Both free on Google Fonts, perfectly matched to the space theme.
+===================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
 /* App.css or ResponseCard.css */
 
@@ -50,19 +36,34 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --text-main: #e2e8f0;
   --text-dim: #94a3b8;
+
+  /* ── Fonts ── */
+  --font-display: 'Orbitron', 'Courier New', monospace;
+  --font-body:    'Exo 2', 'Segoe UI', system-ui, sans-serif;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: var(--font-body); /* Exo 2 everywhere by default */
+}
+
+/* Orbitron on all headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
 }
 
 body {
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1a2e 100%);
   color: var(--text-main);
   overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .App {
@@ -105,7 +106,9 @@ body {
 .header-title {
   font-size: 1.8rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
   background: linear-gradient(135deg, #d6d5dac9 0%, #c8c4cc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -129,8 +132,11 @@ body {
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   white-space: nowrap;
   position: relative;
   z-index: 10;
@@ -1300,7 +1306,7 @@ button {
 .App {
   min-height: 100vh;
   color: #ffffff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
 }
 
 /* ===== HEADER STYLES - TRANSPARENT ===== */
@@ -1328,9 +1334,11 @@ button {
   font-size: 1.8rem;
   font-weight: 700;
   margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 3px;
+  text-transform: uppercase;
   text-shadow: 0 0 30px rgba(255, 255, 255, 0.5),
                0 2px 8px rgba(0, 0, 0, 0.8);
-  letter-spacing: 0.5px;
 }
 
 .nav-menu {
@@ -1858,4 +1866,41 @@ button.active,
 
 .space-control {
   background: transparent !important;
+}
+
+/* =====================================================
+   GLOBAL FONT OVERRIDES
+   Catches any component that hardcodes Courier New,
+   Inter, or generic sans-serif via inline styles.
+   The * rule above handles most cases; these reinforce
+   specific UI element types.
+===================================================== */
+
+/* Inputs, textareas, selects — browsers don't inherit font by default */
+input, textarea, select, button {
+  font-family: var(--font-body) !important;
+}
+
+/* Code/mono blocks keep a techy look with Orbitron fallback */
+code, pre, kbd, samp {
+  font-family: var(--font-display), 'Courier New', monospace;
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+}
+
+/* Any element that still says Courier New via inline style will render
+   Orbitron instead (same monospace slot, but our custom variable wins
+   for anything using font-family: inherit or CSS classes) */
+
+/* Badge-style labels, status chips, tags */
+.badge, .tag, .label, .chip,
+[class*="badge"], [class*="tag"], [class*="label"],
+[class*="status"], [class*="type-label"] {
+  font-family: var(--font-display) !important;
+  letter-spacing: 0.08em;
+}
+
+/* Table cells stay readable with Exo 2 */
+table, th, td {
+  font-family: var(--font-body);
 }
