@@ -1,28 +1,27 @@
 // src/components/CreateProposalForm.jsx
-// FIXED: Added modal wrapper with onClose functionality
-
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
+import './dao-components-glass.css';
 
 const PROPOSAL_TYPES = [
-  { value: '0', label: '🌟 Weekly Theme',       description: 'Set this week\'s exploration theme', quickVote: true  },
-  { value: '1', label: '🔭 Research Discovery', description: 'Share a scientific finding',          quickVote: false },
-  { value: '2', label: '🌍 Community Proposal', description: 'Suggest a community initiative',      quickVote: false },
-  { value: '3', label: '📚 Knowledge Sharing',  description: 'Share educational content',           quickVote: false },
-  { value: '4', label: '🤝 Collaboration',       description: 'Propose a collaboration project',     quickVote: false },
+  { value:'0', label:'🌟 Weekly Theme',       description:"Set this week's exploration theme", quickVote:true  },
+  { value:'1', label:'🔭 Research Discovery', description:'Share a scientific finding',          quickVote:false },
+  { value:'2', label:'🌍 Community Proposal', description:'Suggest a community initiative',      quickVote:false },
+  { value:'3', label:'📚 Knowledge Sharing',  description:'Share educational content',           quickVote:false },
+  { value:'4', label:'🤝 Collaboration',       description:'Propose a collaboration project',    quickVote:false },
 ];
 
 const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClose }) => {
   const [formData, setFormData] = useState({
-    type: '0', title: '', description: '', ipfsHash: '', quickVote: true,
+    type:'0', title:'', description:'', ipfsHash:'', quickVote:true,
   });
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [error, setError]     = useState('');
 
-  const handleTypeChange = (e) => {
-    const t = PROPOSAL_TYPES.find(p => p.value === e.target.value);
-    setFormData({ ...formData, type: e.target.value, quickVote: t?.quickVote || false });
+  const handleTypeChange = (val) => {
+    const t = PROPOSAL_TYPES.find(p => p.value === val);
+    setFormData(prev => ({ ...prev, type:val, quickVote: t?.quickVote ?? false }));
   };
 
   const handleSubmit = async (e) => {
@@ -41,15 +40,10 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
       setLoading(true);
       if (!window.ethereum) throw new Error('MetaMask not installed');
 
-      console.log('🚀 Creating proposal...');
-      console.log('Contract:', contractAddress);
-      console.log('Form data:', formData);
-
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
-      console.log('📝 Calling createProposal on contract...');
       const tx = await contract.createProposal(
         parseInt(formData.type),
         formData.title,
@@ -57,153 +51,174 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
         formData.ipfsHash || '',
         formData.quickVote,
       );
+      await tx.wait();
 
-      console.log('⏳ Transaction sent:', tx.hash);
-      console.log('Waiting for confirmation...');
-      
-      const receipt = await tx.wait();
-      console.log('✅ Transaction confirmed!', receipt);
-
-      setFormData({ type: '0', title: '', description: '', ipfsHash: '', quickVote: true });
+      setFormData({ type:'0', title:'', description:'', ipfsHash:'', quickVote:true });
       if (onSuccess) onSuccess();
       alert('✅ Proposal Created!\n\nTransaction confirmed on-chain.');
     } catch (err) {
-      console.error('❌ Error creating proposal:', err);
-      if (err.code === 'ACTION_REJECTED')                         setError('Transaction rejected by user');
-      else if (err.message.includes('InsufficientReputation'))    setError('You need at least 3 reputation');
-      else                                                         setError(err.message || 'Failed to create proposal');
+      if (err.code === 'ACTION_REJECTED')                      setError('Transaction rejected by user');
+      else if (err.message.includes('InsufficientReputation')) setError('You need at least 3 reputation');
+      else                                                      setError(err.message || 'Failed to create proposal');
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all disabled:opacity-50";
-  const labelClass = "block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2";
+  const selectedType = PROPOSAL_TYPES.find(t => t.value === formData.type);
 
   return (
-    // Modal overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}>
-      
-      <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl"
-        style={{ background: 'rgba(15,23,42,0.95)' }}
-        onClick={(e) => e.stopPropagation()}>
+    // Full-screen overlay — clicking outside closes modal
+    <div className="cpf-overlay" onClick={onClose}>
 
-        {/* Header with close button */}
-        <div className="sticky top-0 px-6 py-5 border-b border-white/10 flex items-center justify-between"
-          style={{ background: 'rgba(99,102,241,0.1)' }}>
+      {/* Modal — stops click propagation, scrollable */}
+      <div className="cpf-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Sticky header */}
+        <div className="cpf-header">
           <div>
-            <h2 className="text-xl font-bold text-white">Create Proposal</h2>
-            <p className="text-slate-400 text-sm mt-1">Submit for community governance</p>
+            <p className="cpf-header-title">Create Proposal</p>
+            <p className="cpf-header-sub">Submit for community governance</p>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
-            ✕
-          </button>
+          <button className="cpf-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        <div className="p-6">
+        {/* Form body */}
+        <div className="cpf-body">
+
           {/* Error */}
           {error && (
-            <div className="mb-5 p-4 rounded-xl border border-red-500/30 bg-red-900/20 flex items-start gap-2">
-              <span className="text-red-400 mt-0.5">⚠️</span>
-              <p className="text-red-300 text-sm">{error}</p>
+            <div className="cpf-error">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
           {/* Reputation warning */}
           {userReputation < 3 && (
-            <div className="mb-5 p-4 rounded-xl border border-amber-500/25 bg-amber-900/10">
-              <p className="text-amber-300 text-sm">
-                You need <strong>3 reputation</strong> to create proposals. Current: <strong>{userReputation}</strong>
-              </p>
-              <p className="text-amber-400/60 text-xs mt-1">Vote on proposals to earn reputation.</p>
+            <div className="cpf-rep-warning">
+              You need <strong>3 reputation</strong> to create proposals.
+              Current: <strong>{userReputation}</strong>
+              <div style={{ fontSize:'12px', marginTop:'4px', opacity:0.6 }}>Vote on proposals to earn reputation.</div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+
             {/* Proposal type */}
             <div>
-              <label className={labelClass}>Proposal Type</label>
-              <div className="grid grid-cols-1 gap-2">
+              <label className="cpf-label">Proposal Type</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                 {PROPOSAL_TYPES.map(type => (
-                  <label key={type.value}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                      formData.type === type.value
-                        ? 'border-indigo-500/50 bg-indigo-900/20'
-                        : 'border-white/5 bg-white/3 hover:border-white/15'
-                    }`}>
+                  <div key={type.value}
+                    className={`cpf-type-option ${formData.type === type.value ? 'selected' : ''}`}
+                    onClick={() => !loading && handleTypeChange(type.value)}>
                     <input type="radio" name="proposalType" value={type.value}
-                      checked={formData.type === type.value} onChange={handleTypeChange}
-                      className="accent-indigo-500" disabled={loading} />
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-medium">{type.label}</p>
-                      <p className="text-slate-500 text-xs">{type.description}</p>
+                      checked={formData.type === type.value}
+                      onChange={() => handleTypeChange(type.value)}
+                      style={{ accentColor:'#6366f1' }} disabled={loading} />
+                    <div style={{ flex:1 }}>
+                      <p className="cpf-type-name">{type.label}</p>
+                      <p className="cpf-type-desc">{type.description}</p>
                     </div>
-                    {type.quickVote && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 border border-blue-500/30">
-                        3 days
-                      </span>
-                    )}
-                  </label>
+                    {type.quickVote && <span className="cpf-quick-tag">3 days</span>}
+                  </div>
                 ))}
               </div>
             </div>
 
             {/* Title */}
             <div>
-              <label className={labelClass}>Title <span className="text-red-400 normal-case">*</span></label>
-              <input type="text" value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
+              <label className="cpf-label">
+                Title <span style={{ color:'#f87171', textTransform:'none', fontWeight:400 }}>*</span>
+              </label>
+              <input type="text" className="cpf-input"
+                value={formData.title}
+                onChange={e => setFormData(p => ({ ...p, title:e.target.value }))}
                 placeholder="Enter a clear, descriptive title"
-                className={inputClass} disabled={loading} required />
+                disabled={loading} required />
             </div>
 
             {/* Description */}
             <div>
-              <label className={labelClass}>Description <span className="text-red-400 normal-case">*</span></label>
-              <textarea value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
+              <label className="cpf-label">
+                Description <span style={{ color:'#f87171', textTransform:'none', fontWeight:400 }}>*</span>
+              </label>
+              <textarea className="cpf-input"
+                value={formData.description}
+                onChange={e => setFormData(p => ({ ...p, description:e.target.value }))}
                 placeholder="Describe your proposal in detail..."
-                rows={5} className={inputClass} disabled={loading} required />
+                rows={5} disabled={loading} required
+                style={{ resize:'vertical', minHeight:'100px' }} />
             </div>
 
-            {/* IPFS Hash */}
+            {/* IPFS */}
             <div>
-              <label className={labelClass}>IPFS Hash <span className="text-slate-600 normal-case font-normal">(optional)</span></label>
-              <input type="text" value={formData.ipfsHash}
-                onChange={e => setFormData({ ...formData, ipfsHash: e.target.value })}
+              <label className="cpf-label">
+                IPFS Hash <span style={{ textTransform:'none', fontWeight:400, opacity:0.5 }}>(optional)</span>
+              </label>
+              <input type="text" className="cpf-input"
+                value={formData.ipfsHash}
+                onChange={e => setFormData(p => ({ ...p, ipfsHash:e.target.value }))}
                 placeholder="ipfs://Qm..."
-                className={inputClass} disabled={loading} />
-              <p className="mt-1.5 text-slate-600 text-xs">Upload documents to IPFS and paste hash</p>
+                disabled={loading} />
+              <p className="cpf-hint">Upload supporting documents to IPFS and paste the hash</p>
             </div>
 
             {/* Quick vote toggle */}
-            <div className="flex items-center justify-between p-4 rounded-xl border border-white/5"
-              style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <div className="cpf-toggle-row">
               <div>
-                <p className="text-white text-sm font-medium">Quick Vote</p>
-                <p className="text-slate-500 text-xs mt-0.5">3 day period instead of 7 days</p>
+                <p className="cpf-toggle-label">Quick Vote</p>
+                <p className="cpf-toggle-sublabel">3 day period instead of 7 days</p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label style={{ position:'relative', display:'inline-flex', alignItems:'center', cursor:'pointer' }}>
                 <input type="checkbox" checked={formData.quickVote}
-                  onChange={e => setFormData({ ...formData, quickVote: e.target.checked })}
-                  className="sr-only peer" disabled={loading} />
-                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
+                  onChange={e => setFormData(p => ({ ...p, quickVote:e.target.checked }))}
+                  disabled={loading}
+                  style={{ position:'absolute', opacity:0, width:0, height:0 }} />
+                {/* Custom toggle track */}
+                <div style={{
+                  width:'44px', height:'24px', borderRadius:'12px', position:'relative',
+                  background: formData.quickVote ? '#6366f1' : 'rgba(255,255,255,0.12)',
+                  border: formData.quickVote ? '1px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.15)',
+                  transition:'all 0.25s ease',
+                }}>
+                  <div style={{
+                    position:'absolute', top:'2px',
+                    left: formData.quickVote ? '22px' : '2px',
+                    width:'18px', height:'18px', borderRadius:'50%',
+                    background:'#ffffff',
+                    boxShadow:'0 1px 4px rgba(0,0,0,0.4)',
+                    transition:'left 0.25s ease',
+                  }} />
+                </div>
               </label>
             </div>
 
+            {/* Voting info grid */}
+            <div className="cpf-info-grid">
+              {[
+                ['Voting Period',      selectedType?.quickVote || formData.quickVote ? '3 days' : '7 days'],
+                ['Execution Delay',    '2 days after voting'],
+                ['Min Votes Required', '5 votes'],
+                ['Quorum',             '10% of voters'],
+              ].map(([key, val]) => (
+                <div key={key}>
+                  <p className="cpf-info-key">{key}</p>
+                  <p className="cpf-info-val">{val}</p>
+                </div>
+              ))}
+            </div>
+
             {/* Submit */}
-            <button type="submit" disabled={loading || userReputation < 3}
-              className="w-full py-3.5 rounded-xl font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
-              style={{
-                background: loading || userReputation < 3 ? '#374151' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              }}>
+            <button type="submit" className="cpf-submit"
+              disabled={loading || userReputation < 3}>
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+                  <svg style={{ animation:'spin 1s linear infinite', width:'16px', height:'16px' }}
+                    fill="none" viewBox="0 0 24 24">
+                    <circle style={{ opacity:0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path style={{ opacity:0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
                   Submitting to blockchain...
                 </span>
