@@ -242,11 +242,9 @@ body {
 
 /* === MAIN CONTENT === */
 .main-content {
- padding: 50px 0px 0px 0px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 30px;
   background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
 }
 
@@ -276,10 +274,10 @@ body {
 
 .main-content.space {
   background: transparent !important;
-  margin: 30px 5px 5px 5px;
-  padding:10px;
-  height: 95%;
-  
+  margin: 0;
+  padding: 0;
+  height: calc(100vh - 80px);
+  min-height: calc(100vh - 80px);
 }
  
 
@@ -841,6 +839,7 @@ body {
 }
 
 .space-canvas {
+  height: 90%;
   flex: 1;
   position: relative;
 }
@@ -1871,8 +1870,10 @@ button.active,
 
 #space-canvas-container canvas {
     background: transparent !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: calc(100vh - 80px) !important;
 }
-
 .space-control {
   background: transparent !important;
 }
@@ -1912,4 +1913,521 @@ code, pre, kbd, samp {
 /* Table cells stay readable with Exo 2 */
 table, th, td {
   font-family: var(--font-body);
+}
+
+
+
+
+
+/* =====================================================
+   COMPLETE MOBILE RESPONSIVE DESIGN
+   Add this to your App.css (at the bottom)
+   ===================================================== */
+
+/* ==========================================
+   BASE FIXES - Apply to all screen sizes
+   ========================================== */
+
+/* Ensure proper viewport on mobile */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+body {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  overflow: hidden;
+  position: relative;
+}
+
+
+/* ==========================================
+   TABLET & BELOW (iPad, large phones)
+   ========================================== */
+@media (max-width: 1024px) {
+  
+  /* Header adjustments */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .header-top {
+    padding: 12px 20px;
+    gap: 12px;
+  }
+  
+  .header-title {
+    font-size: 1.5rem;
+  }
+  
+  /* Hide desktop navigation, show menu button */
+  .desktop-nav-btn {
+    display: none !important;
+  }
+  
+  .menu-button {
+    display: flex !important;
+  }
+  
+  /* Dropdown menu adjustments */
+  .dropdown-menu {
+    width: calc(100% - 40px);
+    max-width: 90vw;
+    left: 20px;
+    right: 20px;
+  }
+  
+  /* Main content */
+  .main-content {
+    padding: 15px;
+  }
+  
+  /* Input area */
+  .input-area {
+    padding: 15px;
+  }
+  
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .upload-button {
+    width: 100%;
+  }
+  
+  .submit-button {
+    width: 100%;
+  }
+}
+
+
+/* ==========================================
+   MOBILE (Phones - Portrait & Landscape)
+   ========================================== */
+@media (max-width: 768px) {
+  
+  /* Header - More compact */
+  .header-top {
+    padding: 10px 15px;
+    flex-wrap: nowrap;
+  }
+  
+  .header-title {
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+  }
+  
+  .menu-button {
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 20px;
+  }
+  
+  /* Navigation */
+  .nav-menu {
+    gap: 8px;
+  }
+  
+  .nav-button {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  /* Dropdown menu - Full width */
+  .dropdown-menu {
+    left: 10px;
+    right: 10px;
+    width: calc(100% - 20px);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .menu-item {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  
+  /* Main content - Optimize for mobile */
+  .main-content {
+    padding: 12px;
+    padding-bottom: 0;
+  }
+  
+  .main-content.home {
+    max-height: calc(100vh - 180px);
+    max-height: calc(100dvh - 180px);
+  }
+  
+  /* Response cards */
+  .response-card {
+    padding: 16px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-radius: 16px;
+  }
+  
+  .response-card h3 {
+    font-size: 1.1rem;
+  }
+  
+  .response-text {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  /* Comparison view - Stack vertically */
+  .comparison-view {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .img-box img {
+    height: 180px;
+  }
+  
+  /* Empty state */
+  .empty-state {
+    padding: 30px 15px;
+    margin-top: 5vh;
+  }
+  
+  .empty-state h2 {
+    font-size: 1.5rem;
+  }
+  
+  /* Input area - Mobile optimized */
+  .input-area {
+    padding: 12px;
+    border-top: 1px solid rgba(129, 140, 248, 0.2);
+  }
+  
+  .input-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .input-row {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  /* Prompt input */
+  .prompt-input {
+    font-size: 15px;
+    padding: 12px 14px;
+    min-height: 44px; /* Touch-friendly */
+  }
+  
+  /* Buttons - Touch friendly */
+  .upload-button,
+  .submit-button {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  /* Image preview */
+  .image-preview-container {
+    max-width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  .image-preview-container img {
+    max-width: 150px;
+    max-height: 150px;
+  }
+  
+  .image-preview-container button {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+  
+  /* Loading states */
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+  
+  /* Error notification */
+  .error-notification {
+    bottom: 20px;
+    right: 15px;
+    left: 15px;
+    max-width: none;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
+
+/* ==========================================
+   SMALL PHONES (iPhone SE, small Android)
+   ========================================== */
+@media (max-width: 375px) {
+  
+  .header-title {
+    font-size: 1.1rem;
+  }
+  
+  .nav-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .main-content {
+    padding: 10px;
+  }
+  
+  .response-card {
+    padding: 12px;
+  }
+  
+  .response-text {
+    font-size: 13px;
+  }
+  
+  .input-area {
+    padding: 10px;
+  }
+  
+  .prompt-input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .upload-button,
+  .submit-button {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}
+
+
+/* ==========================================
+   LANDSCAPE MODE (Phones rotated)
+   ========================================== */
+@media (max-width: 896px) and (orientation: landscape) {
+  
+  .App {
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  .app-header {
+    padding: 8px 15px;
+  }
+  
+  .header-title {
+    font-size: 1.1rem;
+  }
+  
+  .main-content.home {
+    max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
+  }
+  
+  .input-area {
+    padding: 10px 15px;
+  }
+  
+  .dropdown-menu {
+    max-height: calc(100vh - 100px);
+    max-height: calc(100dvh - 100px);
+  }
+}
+
+
+/* ==========================================
+   TOUCH OPTIMIZATIONS (All mobile devices)
+   ========================================== */
+@media (hover: none) and (pointer: coarse) {
+  
+  /* Larger touch targets */
+  button,
+  .nav-button,
+  .menu-item,
+  .upload-button,
+  .submit-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover effects on touch */
+  button:hover,
+  .nav-button:hover,
+  .menu-item:hover {
+    transform: none;
+  }
+  
+  /* Active states for touch feedback */
+  button:active,
+  .nav-button:active {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+  
+  /* Prevent text selection on buttons */
+  button,
+  .nav-button,
+  .menu-item {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Smooth scrolling */
+  .main-content {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+
+/* ==========================================
+   PWA / STANDALONE MODE (Installed app)
+   ========================================== */
+@media (display-mode: standalone) {
+  
+  .App {
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  /* Account for notch/safe areas */
+  .app-header {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  
+  .input-area {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+}
+
+
+/* ==========================================
+   ACCESSIBILITY - Better readability on mobile
+   ========================================== */
+@media (max-width: 768px) {
+  
+  /* Increase font sizes for readability */
+  body {
+    font-size: 16px; /* Prevent zoom on input focus */
+  }
+  
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+  
+  /* Better contrast for readability */
+  .text-dim,
+  .text-gray-600 {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+
+/* ==========================================
+   SPECIFIC COMPONENT FIXES
+   ========================================== */
+
+/* Space simulation mobile */
+@media (max-width: 768px) {
+  .main-content.space {
+    padding: 0;
+    height: calc(100vh - 140px);
+    height: calc(100dvh - 140px);
+  }
+  
+  #space-canvas-container {
+    height: 100%;
+  }
+  
+  #video-container {
+    width: 160px;
+    height: 120px;
+    top: 10px;
+    left: 10px;
+  }
+}
+
+/* DAO Dashboard mobile */
+@media (max-width: 768px) {
+  .dao-container {
+    padding: 15px 10px;
+  }
+  
+  .proposal-card {
+    padding: 15px;
+  }
+}
+
+/* Playground mobile */
+@media (max-width: 768px) {
+  .playground-controls {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+  
+  .color-picker {
+    width: 100%;
+  }
+  
+  .size-slider {
+    width: 100%;
+  }
+}
+
+
+/* ==========================================
+   PERFORMANCE OPTIMIZATIONS FOR MOBILE
+   ========================================== */
+@media (max-width: 768px) {
+  
+  /* Disable expensive effects on mobile */
+  .response-card {
+    transition: none;
+  }
+  
+  .response-card:hover {
+    transform: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Reduce animations */
+  * {
+    animation-duration: 0.2s !important;
+  }
+  
+  /* Simpler backdrop blur for performance */
+  .glass-transparent,
+  .input-area,
+  .dropdown-menu {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
 }
