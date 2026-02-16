@@ -449,15 +449,18 @@ body {
 
 .input-controls {
   display: flex;
-  gap: 12px;
+  flex-direction: row;      /* ✅ always one line, never stacks */
+  flex-wrap: nowrap;        /* ✅ prevents wrapping onto a second line */
+  gap: 8px;
   max-width: 1200px;
   margin: 0 auto;
-  align-items: flex-end;
+  align-items: center;      /* vertically center all elements */
   width: 100%;
 }
 
 .prompt-textarea {
   flex: 1;
+  min-width: 0;             /* ✅ allows flex shrinking below content size */
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
@@ -466,10 +469,12 @@ body {
   resize: none;
   font-size: 15px;
   font-family: inherit;
+  height: 50px;
   min-height: 50px;
-  max-height: 150px;
+  max-height: 50px;         /* ✅ fixed height keeps row stable */
   transition: all 0.3s ease;
   line-height: 1.5;
+  overflow-y: auto;
 }
 
 .prompt-textarea:focus {
@@ -488,19 +493,22 @@ body {
   background: linear-gradient(135deg, var(--primary) 0%, #9333ea 100%);
   border: none;
   color: white;
-  padding: 14px 24px;
+  padding: 0;
   border-radius: 14px;
   cursor: pointer;
   font-weight: 600;
   font-size: 15px;
   transition: all 0.3s ease;
+  width: 50px;              /* ✅ fixed square — never stretches */
   min-width: 50px;
+  height: 50px;
   min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   white-space: nowrap;
+  flex-shrink: 0;           /* ✅ never shrinks, never wraps */
 }
 
 .upload-button:hover,
@@ -529,24 +537,29 @@ body {
   }
 
   .input-controls {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
+    flex-direction: row;      /* ✅ stays one line on mobile */
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
   }
 
   .prompt-textarea {
-    min-height: 60px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     font-size: 14px;
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 
   .upload-button,
   .submit-button {
-    width: 100%;
-    justify-content: center;
-    min-height: 48px;
-    font-size: 14px;
-    padding: 12px 20px;
+    width: 44px;            /* ✅ compact icon size on mobile */
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    font-size: 18px;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .image-preview-container {
@@ -576,9 +589,13 @@ body {
 
   .upload-button,
   .submit-button {
-    min-height: 44px;
-    font-size: 13px;
-    padding: 10px 16px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    font-size: 16px;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .image-preview-container img {
@@ -683,24 +700,29 @@ body {
   }
 
   .input-controls {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
+    flex-direction: row;      /* ✅ stays one line on mobile */
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
   }
 
   .prompt-textarea {
-    min-height: 60px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     font-size: 14px;
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 
   .upload-button,
   .submit-button {
-    width: 100%;
-    justify-content: center;
-    min-height: 48px;
-    font-size: 14px;
-    padding: 12px 20px;
+    width: 44px;            /* ✅ compact icon size on mobile */
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    font-size: 18px;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .image-preview-container {
@@ -730,9 +752,13 @@ body {
 
   .upload-button,
   .submit-button {
-    min-height: 44px;
-    font-size: 13px;
-    padding: 10px 16px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    font-size: 16px;
+    padding: 0;
+    flex-shrink: 0;
   }
 
   .image-preview-container img {
@@ -1042,8 +1068,10 @@ body {
   }
 
   .input-controls {
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;      /* ✅ stays one line on mobile */
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: center;
   }
 
   .prompt-textarea {

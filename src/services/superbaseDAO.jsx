@@ -1,6 +1,4 @@
-
-
-import { supabase } from '../config/supabase';
+import { supabase } from './superbase';
 
 /**
  * Upload image to Supabase Storage
@@ -10,7 +8,7 @@ export const uploadImage = async (file) => {
   const fileName = `${Math.random()}.${fileExt}`;
   const filePath = `${fileName}`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('dao-images')
     .upload(filePath, file);
 

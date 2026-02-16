@@ -10,7 +10,7 @@ import {
   getComments,
   toggleCommentLike,
   subscribeToPostsChannel
-} from '../services/superbaseDAO.JS';
+} from '../services/superbaseDAO';
 
 function DAO({ onViewProfile }) {
   const [communityPosts, setCommunityPosts] = useState([]);
