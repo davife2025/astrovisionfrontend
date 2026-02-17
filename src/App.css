@@ -281,8 +281,17 @@ body {
 
 .main-content.dao {
   margin: 0;
+  padding: 0;            /* inner components handle their own padding */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* DAODashboard inner container — must not cap height or block scroll */
+.dao-dashboard-container {
+  width: 100%;
+  min-height: 100%;      /* fills the scrollable area */
   padding: 20px;
-  overflow-y: auto;     /* dao tab scrolls independently */
+  box-sizing: border-box;
 }
 
 /* === RESPONSE CARDS === */

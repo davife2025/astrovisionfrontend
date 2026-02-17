@@ -307,8 +307,16 @@ function App() {
 
       {activeTab === 'home' && <ObservationTab responses={responses} loading={loading} loadingStage={loadingStage} />}
       {activeTab === 'space' && <SpaceSimulation handTrackingEnabled={handTrackingEnabled} handStatus={handStatus} onToggleHandTracking={toggleHandTracking} selectedShape={selectedShape} shapes={shapes} onShapeChange={changeShape} loading={loading} loadingStage={loadingStage} />}
-      {activeTab === 'avdao' && <DAO onViewProfile={openProfile} />}
-      {activeTab === 'daodashboard' && <DAODashboard/>}
+      {activeTab === 'avdao' && (
+        <main className="main-content dao">
+          <DAO onViewProfile={openProfile} />
+        </main>
+      )}
+      {activeTab === 'daodashboard' && (
+        <main className="main-content dao">
+          <DAODashboard/>
+        </main>
+      )}
 
 
 
