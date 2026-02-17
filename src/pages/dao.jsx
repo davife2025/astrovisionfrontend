@@ -1,6 +1,4 @@
-// src/pages/dao.jsx - UPDATED TO USE SUPABASE
-// Replace your existing dao.jsx with this version
-
+// src/pages/dao.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
   createPost,
@@ -9,8 +7,8 @@ import {
   createComment,
   getComments,
   toggleCommentLike,
-  subscribeToPostsChannel
-} from '../services/superbaseDAO';
+  subscribeToPostsChannel,
+} from '../services/daoService';
 
 function DAO({ onViewProfile }) {
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -44,33 +42,13 @@ function DAO({ onViewProfile }) {
     loadPosts();
   }, []);
 
-  // Subscribe to real-time updates
+  // Poll for new posts every 8 seconds (replaces Supabase real-time channel)
   useEffect(() => {
-    const channel = subscribeToPostsChannel((payload) => {
-      console.log('Real-time update:', payload);
-      
-      if (payload.eventType === 'INSERT') {
-        // New post created
-        loadPosts(); // Reload to get formatted data
-      } else if (payload.eventType === 'UPDATE') {
-        // Post updated (like)
-        setCommunityPosts(prev =>
-          prev.map(p => p.id === payload.new.id ? {
-            ...p,
-            likes: payload.new.likes,
-            likedBy: payload.new.liked_by
-          } : p)
-        );
-      } else if (payload.eventType === 'DELETE') {
-        // Post deleted
-        setCommunityPosts(prev => prev.filter(p => p.id !== payload.old.id));
-      }
+    const subscription = subscribeToPostsChannel(() => {
+      loadPosts(); // simply reload on each tick
     });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPosts = async () => {
     try {

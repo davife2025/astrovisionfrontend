@@ -508,7 +508,7 @@ body {
   justify-content: center;
   gap: 6px;
   white-space: nowrap;
-  flex-shrink: 0;           /* ✅ never shrinks, never wraps */
+  flex-shrink: 1;           /* ✅ never shrinks, never wraps */
 }
 
 .upload-button:hover,
