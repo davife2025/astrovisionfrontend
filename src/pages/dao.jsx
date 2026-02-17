@@ -1,14 +1,10 @@
-// src/pages/dao.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  createPost,
-  getPosts,
-  togglePostLike,
-  createComment,
-  getComments,
-  toggleCommentLike,
-  subscribeToPostsChannel,
-} from '../services/daoService';
+
+const API_URL = process.env.REACT_APP_API_URL
+  ? `${process.env.REACT_APP_API_URL}/api`
+  : process.env.NODE_ENV === 'production'
+    ? '/api'                      // same-origin in production
+    : 'http://localhost:3001/api'; // dev fallback only
 
 function DAO({ onViewProfile }) {
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -24,60 +20,42 @@ function DAO({ onViewProfile }) {
   const [postComments, setPostComments] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
   
-  // Nested comment states
+  // NEW: Nested comment states
   const [replyingTo, setReplyingTo] = useState({});
   const [replyTexts, setReplyTexts] = useState({});
   
   const daoFileInputRef = useRef(null);
   const userId = useRef(localStorage.getItem('userId') || 'user-' + Math.random().toString(36).substr(2, 9));
-  const author = useRef(localStorage.getItem('userName') || `Explorer-${userId.current.slice(-4)}`);
 
   useEffect(() => {
     localStorage.setItem('userId', userId.current);
-    localStorage.setItem('userName', author.current);
   }, []);
 
-  // Load posts on mount
   useEffect(() => {
     loadPosts();
   }, []);
 
-  // Poll for new posts every 8 seconds (replaces Supabase real-time channel)
-  useEffect(() => {
-    const subscription = subscribeToPostsChannel(() => {
-      loadPosts(); // simply reload on each tick
-    });
-    return () => subscription.unsubscribe();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const loadPosts = async () => {
     try {
-      const posts = await getPosts();
-      
-      // Get comment counts
-      const postsWithCommentCounts = await Promise.all(
-        posts.map(async (post) => {
-          const comments = await getComments(post.id);
-          return {
-            ...post,
-            comments: comments,
-            likedBy: post.liked_by || []
-          };
-        })
-      );
-      
-      setCommunityPosts(postsWithCommentCounts);
+      const response = await fetch(`${API_URL}/posts`);
+      if (!response.ok) throw new Error('Failed to load posts');
+      const posts = await response.json();
+      setCommunityPosts(posts);
     } catch (error) {
       console.error('Load error:', error);
-      setError('Failed to load posts');
-      setTimeout(() => setError(''), 3000);
+      // Show empty state — don't block the UI
+      setCommunityPosts([]);
+      setError('Could not reach server. Posts unavailable.');
+      setTimeout(() => setError(''), 4000);
     }
   };
 
-  const loadCommentsForPost = async (postId) => {
+  const loadComments = async (postId) => {
     try {
       setLoadingComments(prev => ({ ...prev, [postId]: true }));
-      const comments = await getComments(postId);
+      const response = await fetch(`${API_URL}/posts/${postId}/comments`);
+      if (!response.ok) throw new Error('Failed to load comments');
+      const comments = await response.json();
       setPostComments(prev => ({ ...prev, [postId]: comments }));
     } catch (error) {
       console.error('Load comments error:', error);
@@ -86,12 +64,12 @@ function DAO({ onViewProfile }) {
     }
   };
 
-  const toggleCommentsView = async (postId) => {
+  const toggleComments = async (postId) => {
     const isCurrentlyShown = showComments[postId];
     setShowComments(prev => ({ ...prev, [postId]: !isCurrentlyShown }));
     
     if (!isCurrentlyShown && !postComments[postId]) {
-      await loadCommentsForPost(postId);
+      await loadComments(postId);
     }
   };
 
@@ -117,23 +95,32 @@ function DAO({ onViewProfile }) {
 
     setLoading(true);
     try {
-      // Create post with Supabase
-      const newPost = await createPost({
-        text: daoPostText,
-        image: daoPostImage, // File object, not base64
-        userId: userId.current,
-        author: author.current
+      let imageBase64 = null;
+
+      if (daoPostImage) {
+        const reader = new FileReader();
+        imageBase64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(daoPostImage);
+        });
+      }
+
+      const response = await fetch(`${API_URL}/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: daoPostText,
+          image: imageBase64,
+          userId: userId.current  // FIXED: Added userId
+        })
       });
 
-      // Add to local state
-      setCommunityPosts(prev => [{
-        ...newPost,
-        timeString: 'Just now',
-        comments: [],
-        likedBy: []
-      }, ...prev]);
+      if (!response.ok) throw new Error('Failed to create post');
 
-      // Clear form
+      const newPost = await response.json();
+      setCommunityPosts(prev => [newPost, ...prev]);
+
       setDaoPostText('');
       setDaoPostImage(null);
       setDaoImagePreview(null);
@@ -141,74 +128,110 @@ function DAO({ onViewProfile }) {
       setError('');
     } catch (error) {
       console.error('Post creation error:', error);
-      setError('Failed to create post: ' + error.message);
+      setError('Failed to create post');
       setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
     }
   };
 
-  const addComment = async (postId, parentId = null) => {
+  // UPDATED: Now supports nested comments via parentId
+  const createComment = async (postId, parentId = null) => {
     const text = parentId ? replyTexts[parentId] : commentTexts[postId];
     
-    if (!text || !text.trim()) {
-      return;
+    if (!text || !text.trim()) return;
+
+    // Optimistic update — show comment immediately in UI
+    const tempComment = {
+      id: 'temp-' + Date.now(),
+      text: text.trim(),
+      userId: userId.current,
+      author: 'You',
+      timeString: 'just now',
+      likes: 0,
+      likedBy: [],
+      parentId: parentId,
+      replies: []
+    };
+
+    setPostComments(prev => ({
+      ...prev,
+      [postId]: parentId
+        ? (prev[postId] || []).map(c =>
+            c.id === parentId
+              ? { ...c, replies: [...(c.replies || []), tempComment] }
+              : c
+          )
+        : [...(prev[postId] || []), tempComment]
+    }));
+
+    // Clear input immediately
+    if (parentId) {
+      setReplyTexts(prev => ({ ...prev, [parentId]: '' }));
+      setReplyingTo(prev => ({ ...prev, [parentId]: false }));
+    } else {
+      setCommentTexts(prev => ({ ...prev, [postId]: '' }));
     }
 
     try {
-      await createComment({
-        postId,
-        userId: userId.current,
-        author: author.current,
-        text: text.trim(),
-        parentId
+      const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text.trim(),
+          userId: userId.current,
+          parentId: parentId
+        })
       });
 
-      // Reload comments
-      await loadCommentsForPost(postId);
-      
-      // Clear input
-      if (parentId) {
-        setReplyTexts(prev => ({ ...prev, [parentId]: '' }));
-        setReplyingTo(prev => ({ ...prev, [parentId]: false }));
-      } else {
-        setCommentTexts(prev => ({ ...prev, [postId]: '' }));
-      }
+      if (!response.ok) throw new Error('Failed to create comment');
+
+      // Replace optimistic comment with real one from server
+      await loadComments(postId);
     } catch (error) {
       console.error('Comment creation error:', error);
-      setError('Failed to create comment');
-      setTimeout(() => setError(''), 3000);
+      // Keep the optimistic comment visible — don't revert
+      // so the user at least sees their comment even if backend is down
     }
   };
 
-  const handleLikePost = async (postId) => {
+  const toggleLike = async (postId) => {
     try {
-      const updatedPost = await togglePostLike(postId, userId.current);
-      
-      setCommunityPosts(prev =>
-        prev.map(p => p.id === postId ? {
-          ...p,
-          likes: updatedPost.likes,
-          likedBy: updatedPost.liked_by
-        } : p)
+      const response = await fetch(`${API_URL}/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId.current })
+      });
+
+      if (!response.ok) throw new Error('Failed to like post');
+
+      const updatedPost = await response.json();
+      setCommunityPosts(prev => 
+        prev.map(p => p.id === postId ? updatedPost : p)
       );
     } catch (error) {
       console.error('Like error:', error);
     }
   };
 
-  const handleLikeComment = async (postId, commentId) => {
+  const toggleCommentLike = async (postId, commentId) => {
     try {
-      await toggleCommentLike(commentId, userId.current);
-      
+      const response = await fetch(`${API_URL}/posts/${postId}/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId.current })
+      });
+
+      if (!response.ok) throw new Error('Failed to like comment');
+
       // Reload comments to get updated like status
-      await loadCommentsForPost(postId);
+      await loadComments(postId);
     } catch (error) {
       console.error('Comment like error:', error);
     }
   };
 
-  // Recursive comment renderer
+  // NEW: Recursive comment renderer for nested comments
   const renderComment = (comment, postId, depth = 0) => {
     const marginLeft = depth * 20;
     
@@ -232,7 +255,7 @@ function DAO({ onViewProfile }) {
             opacity: 0.7
           }}>
             <span 
-              onClick={() => onViewProfile && onViewProfile(comment.user_id)}
+              onClick={() => onViewProfile && onViewProfile(comment.userId)}
               style={{ 
                 fontWeight: 'bold', 
                 color: '#00ffcc',
@@ -240,21 +263,19 @@ function DAO({ onViewProfile }) {
                 textDecoration: 'underline'
               }}
             >
-              🌟 {comment.author}
+              {comment.author}
             </span>
             <span>{comment.timeString}</span>
           </div>
-
-          <p style={{ marginBottom: '10px', fontSize: '14px' }}>
+          <p style={{ marginBottom: '8px', fontSize: '14px' }}>
             {comment.text}
           </p>
-
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <button
-              onClick={() => handleLikeComment(postId, comment.id)}
+              onClick={() => toggleCommentLike(postId, comment.id)}
               style={{
-                padding: '4px 10px',
-                background: (comment.liked_by || []).includes(userId.current)
+                padding: '4px 12px',
+                background: comment.likedBy?.includes(userId.current)
                   ? 'rgba(255,100,100,0.3)'
                   : 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
@@ -264,13 +285,12 @@ function DAO({ onViewProfile }) {
                 fontSize: '12px'
               }}
             >
-              {(comment.liked_by || []).includes(userId.current) ? '❤️' : '🤍'} {comment.likes}
+              {comment.likedBy?.includes(userId.current) ? '❤️' : '🤍'} {comment.likes}
             </button>
-
             <button
               onClick={() => setReplyingTo(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
               style={{
-                padding: '4px 10px',
+                padding: '4px 12px',
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
                 borderRadius: '12px',
@@ -279,43 +299,43 @@ function DAO({ onViewProfile }) {
                 fontSize: '12px'
               }}
             >
-              💬 Reply
+               Reply
             </button>
           </div>
-
+          
           {replyingTo[comment.id] && (
-            <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
+            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
               <input
                 type="text"
                 value={replyTexts[comment.id] || ''}
                 onChange={(e) => setReplyTexts(prev => ({ ...prev, [comment.id]: e.target.value }))}
-                placeholder="Write a reply..."
+                placeholder={`Reply to ${comment.author}...`}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
-                    addComment(postId, comment.id);
+                    createComment(postId, comment.id);
                   }
                 }}
                 style={{
                   flex: 1,
-                  padding: '6px 10px',
+                  padding: '8px 12px',
                   background: 'rgba(0,0,0,0.3)',
                   border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '16px',
+                  borderRadius: '20px',
                   color: '#fff',
                   fontSize: '13px'
                 }}
               />
               <button
-                onClick={() => addComment(postId, comment.id)}
+                onClick={() => createComment(postId, comment.id)}
                 disabled={!replyTexts[comment.id]?.trim()}
                 style={{
-                  padding: '6px 12px',
+                  padding: '6px 14px',
                   background: !replyTexts[comment.id]?.trim() ? '#555' : '#00ffcc',
                   color: !replyTexts[comment.id]?.trim() ? '#888' : '#000',
                   border: 'none',
-                  borderRadius: '16px',
+                  borderRadius: '20px',
                   cursor: !replyTexts[comment.id]?.trim() ? 'not-allowed' : 'pointer',
-                  fontSize: '12px',
+                  fontSize: '13px',
                   fontWeight: 'bold'
                 }}
               >
@@ -324,8 +344,7 @@ function DAO({ onViewProfile }) {
             </div>
           )}
         </div>
-
-        {/* Render nested replies */}
+        
         {comment.replies && comment.replies.length > 0 && (
           <div>
             {comment.replies.map(reply => renderComment(reply, postId, depth + 1))}
@@ -336,57 +355,36 @@ function DAO({ onViewProfile }) {
   };
 
   return (
-    <main style={{ padding: '30px', maxWidth: '800px', margin: '0 auto' }}>
-      <div>
-        <h2 style={{ marginBottom: '10px', fontSize: '28px', fontFamily: 'Orbitron' }}>
-          🌌 AstroVision Community
+    <main className="main-content dao">
+      <div className="dao-container" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+        <h2 className="dao-title" style={{ textAlign: 'center', marginBottom: '10px' }}>
+           Community 
         </h2>
-        <p style={{ marginBottom: '30px', opacity: 0.7, fontSize: '15px' }}>
-          Share your cosmic discoveries and connect with fellow explorers
+        <p style={{ textAlign: 'center', marginBottom: '30px', opacity: 0.8 }}>
+          Share your astronomical discoveries with the community
         </p>
 
-        {/* Create Post Form */}
-        <div style={{
+        {/* Create Post Section */}
+        <div className="create-post" style={{
           background: 'rgba(255,255,255,0.05)',
           padding: '20px',
           borderRadius: '12px',
-          marginBottom: '30px',
-          border: '1px solid rgba(255,255,255,0.1)'
+          marginBottom: '30px'
         }}>
-          <h3 style={{ marginBottom: '15px', fontSize: '18px' }}>
-            ✨ Share a Discovery
-          </h3>
-
-          <textarea
-            value={daoPostText}
-            onChange={(e) => setDaoPostText(e.target.value)}
-            placeholder="What have you discovered in the cosmos? Share your observation, theory, or question..."
-            style={{
-              width: '100%',
-              minHeight: '100px',
-              padding: '12px',
-              background: 'rgba(0,0,0,0.3)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '8px',
-              color: '#fff',
-              fontSize: '15px',
-              marginBottom: '15px',
-              resize: 'vertical',
-              fontFamily: 'Exo 2'
-            }}
-          />
-
+          <h3 style={{ marginBottom: '15px' }}> Share Discovery</h3>
+          
           {daoImagePreview && (
-            <div style={{ position: 'relative', marginBottom: '15px' }}>
+            <div style={{ marginBottom: '15px', position: 'relative' }}>
               <img 
                 src={daoImagePreview} 
                 alt="Preview" 
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '300px',
+                style={{ 
+                  width: '100%', 
+                  maxHeight: '300px', 
+                  objectFit: 'contain',
                   borderRadius: '8px',
-                  display: 'block'
-                }}
+                  background: '#000'
+                }} 
               />
               <button
                 onClick={() => {
@@ -398,7 +396,7 @@ function DAO({ onViewProfile }) {
                   position: 'absolute',
                   top: '10px',
                   right: '10px',
-                  background: 'rgba(255,0,0,0.8)',
+                  background: '#ff4444',
                   color: '#fff',
                   border: 'none',
                   borderRadius: '50%',
@@ -413,14 +411,33 @@ function DAO({ onViewProfile }) {
             </div>
           )}
 
+          <textarea
+            value={daoPostText}
+            onChange={(e) => setDaoPostText(e.target.value)}
+            placeholder="Describe your discovery, observation, or astronomical insight..."
+            rows="4"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: '14px',
+              marginBottom: '15px',
+              resize: 'vertical'
+            }}
+          />
+
           <div style={{ display: 'flex', gap: '10px' }}>
             <input
-              ref={daoFileInputRef}
               type="file"
+              ref={daoFileInputRef}
               accept="image/*"
               onChange={handleDaoImageChange}
+              disabled={loading}
               style={{ display: 'none' }}
-              id="dao-file-input"
             />
             <button
               onClick={() => daoFileInputRef.current?.click()}
@@ -436,7 +453,7 @@ function DAO({ onViewProfile }) {
                 opacity: loading ? 0.5 : 1
               }}
             >
-              📷 Add Image
+               Add Image
             </button>
             <button
               onClick={createCommunityPost}
@@ -453,20 +470,20 @@ function DAO({ onViewProfile }) {
                 flex: 1
               }}
             >
-              {loading ? '🚀 Posting...' : '🚀 Post Discovery'}
+              {loading ? ' Posting...' : 'Post Discovery'}
             </button>
           </div>
 
           {error && (
             <p style={{ color: '#ff4444', marginTop: '10px', fontSize: '14px' }}>
-              ⚠️ {error}
+              {error}
             </p>
           )}
         </div>
 
         {/* Community Posts Feed */}
         <div className="community-feed">
-          <h3 style={{ marginBottom: '20px', fontSize: '20px' }}>
+          <h3 style={{ marginBottom: '20px' }}>
             🔭 Community Discoveries ({communityPosts.length})
           </h3>
           
@@ -478,9 +495,7 @@ function DAO({ onViewProfile }) {
               borderRadius: '12px',
               opacity: 0.6
             }}>
-              <p style={{ fontSize: '16px' }}>
-                🌟 No discoveries yet. Be the first to share!
-              </p>
+              <p>No discoveries yet. Be the first to share!</p>
             </div>
           )}
 
@@ -504,7 +519,7 @@ function DAO({ onViewProfile }) {
                 opacity: 0.8
               }}>
                 <span 
-                  onClick={() => onViewProfile && onViewProfile(post.user_id)}
+                  onClick={() => onViewProfile && onViewProfile(post.userId)}
                   style={{ 
                     fontWeight: 'bold', 
                     color: '#00ffcc',
@@ -536,8 +551,7 @@ function DAO({ onViewProfile }) {
                 <p style={{
                   marginBottom: '15px',
                   lineHeight: '1.6',
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '15px'
+                  whiteSpace: 'pre-wrap'
                 }}>
                   {post.text}
                 </p>
@@ -551,7 +565,7 @@ function DAO({ onViewProfile }) {
                 borderTop: '1px solid rgba(255,255,255,0.1)'
               }}>
                 <button
-                  onClick={() => handleLikePost(post.id)}
+                  onClick={() => toggleLike(post.id)}
                   style={{
                     padding: '8px 16px',
                     background: post.likedBy?.includes(userId.current) 
@@ -571,7 +585,7 @@ function DAO({ onViewProfile }) {
                 </button>
 
                 <button
-                  onClick={() => toggleCommentsView(post.id)}
+                  onClick={() => toggleComments(post.id)}
                   style={{
                     padding: '8px 16px',
                     background: 'rgba(255,255,255,0.1)',
@@ -603,7 +617,7 @@ function DAO({ onViewProfile }) {
                       placeholder="Add a comment..."
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
-                          addComment(post.id);
+                          createComment(post.id);
                         }
                       }}
                       style={{
@@ -617,7 +631,7 @@ function DAO({ onViewProfile }) {
                       }}
                     />
                     <button
-                      onClick={() => addComment(post.id)}
+                      onClick={() => createComment(post.id)}
                       disabled={!commentTexts[post.id]?.trim()}
                       style={{
                         padding: '8px 16px',

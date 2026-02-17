@@ -58,8 +58,7 @@ h1, h2, h3, h4, h5, h6 {
 body {
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1a2e 100%);
   color: var(--text-main);
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;     /* body never scrolls — .App and .main-content do */
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 400;
@@ -70,8 +69,8 @@ body {
 .App {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;        /* exact viewport — creates the scroll boundary */
+  overflow: hidden;     /* children scroll, not the body */
 }
 
 /* === SPINNER ANIMATION === */
@@ -242,9 +241,10 @@ body {
 
 /* === MAIN CONTENT === */
 .main-content {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1;              /* fills all space between header and bottom */
+  overflow-y: auto;     /* THIS element scrolls */
   overflow-x: hidden;
+  min-height: 0;        /* critical: allows flex child to shrink below content size */
   background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
 }
 
@@ -267,13 +267,7 @@ body {
 
 .main-content.home {
   background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
-  padding: 30px 30px 110px 30px; /* bottom clears the sticky input bar */
-  margin: 0;
-  min-height: calc(100vh - 80px);
-  height: auto;                   /* never clips content */
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex: 1;
+  padding: 30px 30px 110px; /* 110px bottom = clears the fixed input bar */
 }
 
 .main-content.space {
@@ -286,8 +280,9 @@ body {
  
 
 .main-content.dao {
-  margin: 0px;
+  margin: 0;
   padding: 20px;
+  overflow-y: auto;     /* dao tab scrolls independently */
 }
 
 /* === RESPONSE CARDS === */
@@ -391,7 +386,7 @@ body {
 /* === INPUT AREA - FIXED VERSION === */
 /* === INPUT AREA - FIXED VERSION === */
 .input-area {
-  position: fixed;       /* floats above content — doesn't push scroll */
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
@@ -399,9 +394,11 @@ body {
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-border);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  padding: 16px 20px;
-  z-index: 100;
+  padding: 20px;
+  z-index: 50;
   width: 100%;
+  margin: 0;
+  margin-bottom: 0px;
 }
 
 .image-preview-container {
@@ -501,18 +498,16 @@ body {
   font-weight: 600;
   font-size: 15px;
   transition: all 0.3s ease;
-  width: 50px;
+  width: 50px;              /* ✅ fixed square — never stretches */
   min-width: 50px;
-  max-width: 50px;   /* hard cap — cannot grow */
   height: 50px;
   min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   white-space: nowrap;
-  flex-shrink: 0;    /* never shrinks */
-  flex-grow: 0;      /* never grows */
-  overflow: hidden;  /* clips any text that overflows the icon size */
+  flex-shrink: 1;           /* ✅ never shrinks, never wraps */
 }
 
 .upload-button:hover,
@@ -1637,8 +1632,10 @@ select:focus {
   display: none;
 }
 
-/* ===== TRANSPARENT BUTTONS — upload-button and submit-button excluded ===== */
-button:not(.upload-button):not(.submit-button),
+/* ===== TRANSPARENT BUTTONS (ALL) ===== */
+button,
+.upload-button,
+.submit-button,
 .shape-button,
 .hand-tracking-toggle,
 .remove-image-button {
@@ -1686,8 +1683,7 @@ button.active,
 
 .submit-button {
   font-weight: 600;
-  min-width: 50px; /* matches the fixed 50px width */
-  max-width: 50px;
+  min-width: 100px;
 }
 
 .remove-image-button {
