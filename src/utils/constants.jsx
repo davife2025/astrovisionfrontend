@@ -1,16 +1,11 @@
 // src/utils/constants.js
 
-// Debug: Log environment variable
-console.log('REACT_APP_BACKEND_URL:', process.env.REACT_APP_BACKEND_URL);
-
 export const API_ENDPOINTS = {
-  BACKEND: process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001',
+  BACKEND: process.env.REACT_APP_API_URL
+    || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001'),
   HF_ROUTER: 'https://router.huggingface.co/featherless-ai/v1/completions',
   HF_VISION: 'https://api-inference.huggingface.co/models/llava-hf/llava-1.5-7b-hf',
 };
-
-// Debug: Log the final API_ENDPOINTS
-console.log('API_ENDPOINTS:', API_ENDPOINTS);
 
 export const AI_MODELS = {
   ASTRO_SAGE: 'AstroMLab/AstroSage-8B',
