@@ -267,11 +267,13 @@ body {
 
 .main-content.home {
   background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
-  padding-top: 30px;
-  padding-bottom: 90px; /* leave room for sticky input bar */
-  margin-bottom: 0;
-  min-height: calc(100vh - 80px); /* full height, scrollable */
+  padding: 30px 30px 110px 30px; /* bottom clears the sticky input bar */
+  margin: 0;
+  min-height: calc(100vh - 80px);
+  height: auto;                   /* never clips content */
   overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
 }
 
 .main-content.space {
@@ -389,7 +391,7 @@ body {
 /* === INPUT AREA - FIXED VERSION === */
 /* === INPUT AREA - FIXED VERSION === */
 .input-area {
-  position: sticky;
+  position: fixed;       /* floats above content — doesn't push scroll */
   bottom: 0;
   left: 0;
   right: 0;
@@ -397,11 +399,9 @@ body {
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--glass-border);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  z-index: 50;
+  padding: 16px 20px;
+  z-index: 100;
   width: 100%;
-  margin: 0;
-  margin-bottom: 0px;
 }
 
 .image-preview-container {
@@ -503,15 +503,16 @@ body {
   transition: all 0.3s ease;
   width: 50px;
   min-width: 50px;
+  max-width: 50px;   /* hard cap — cannot grow */
   height: 50px;
   min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   white-space: nowrap;
-  flex-shrink: 0;  /* buttons NEVER shrink — textarea takes the hit */
-  flex-grow: 0;    /* buttons NEVER grow either */
+  flex-shrink: 0;    /* never shrinks */
+  flex-grow: 0;      /* never grows */
+  overflow: hidden;  /* clips any text that overflows the icon size */
 }
 
 .upload-button:hover,
@@ -1636,10 +1637,7 @@ select:focus {
   display: none;
 }
 
-/* ===== TRANSPARENT BUTTONS (ALL generic buttons) =====
-   upload-button and submit-button are explicitly excluded here
-   because they have their own precise sizing rules above.
-*/
+/* ===== TRANSPARENT BUTTONS — upload-button and submit-button excluded ===== */
 button:not(.upload-button):not(.submit-button),
 .shape-button,
 .hand-tracking-toggle,
@@ -1688,7 +1686,8 @@ button.active,
 
 .submit-button {
   font-weight: 600;
-  min-width: 50px; /* matches the fixed width — NOT 100px which breaks mobile */
+  min-width: 50px; /* matches the fixed 50px width */
+  max-width: 50px;
 }
 
 .remove-image-button {

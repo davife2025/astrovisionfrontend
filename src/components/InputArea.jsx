@@ -55,8 +55,9 @@ const InputArea = ({
           onClick={() => fileInputRef.current?.click()}
           aria-label="Upload image"
           disabled={loading}
+          title="Add document"
         >
-          add document
+          📎
         </button>
 
         <textarea
@@ -74,8 +75,9 @@ const InputArea = ({
           onClick={onSubmit}
           disabled={loading || (!prompt.trim() && !imagePreview)}
           aria-label="Submit"
+          title="Send"
         >
-          {loading ? 'loading..' : 'send'}
+          {loading ? '⏳' : '➤'}
         </button>
       </div>
     </div>
