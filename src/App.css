@@ -268,8 +268,10 @@ body {
 .main-content.home {
   background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
   padding-top: 30px;
+  padding-bottom: 90px; /* leave room for sticky input bar */
   margin-bottom: 0;
-  height: 80%;
+  min-height: calc(100vh - 80px); /* full height, scrollable */
+  overflow-y: auto;
 }
 
 .main-content.space {
@@ -499,7 +501,7 @@ body {
   font-weight: 600;
   font-size: 15px;
   transition: all 0.3s ease;
-  width: 50px;              /* ✅ fixed square — never stretches */
+  width: 50px;
   min-width: 50px;
   height: 50px;
   min-height: 50px;
@@ -508,7 +510,8 @@ body {
   justify-content: center;
   gap: 6px;
   white-space: nowrap;
-  flex-shrink: 1;           /* ✅ never shrinks, never wraps */
+  flex-shrink: 0;  /* buttons NEVER shrink — textarea takes the hit */
+  flex-grow: 0;    /* buttons NEVER grow either */
 }
 
 .upload-button:hover,
@@ -1633,10 +1636,11 @@ select:focus {
   display: none;
 }
 
-/* ===== TRANSPARENT BUTTONS (ALL) ===== */
-button,
-.upload-button,
-.submit-button,
+/* ===== TRANSPARENT BUTTONS (ALL generic buttons) =====
+   upload-button and submit-button are explicitly excluded here
+   because they have their own precise sizing rules above.
+*/
+button:not(.upload-button):not(.submit-button),
 .shape-button,
 .hand-tracking-toggle,
 .remove-image-button {
@@ -1684,7 +1688,7 @@ button.active,
 
 .submit-button {
   font-weight: 600;
-  min-width: 100px;
+  min-width: 50px; /* matches the fixed width — NOT 100px which breaks mobile */
 }
 
 .remove-image-button {
