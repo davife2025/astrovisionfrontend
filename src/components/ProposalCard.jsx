@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
+import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
 const PROPOSAL_TYPE_LABELS = {
@@ -22,6 +23,7 @@ const STATUS_CONFIG = {
 const VOTE_CHOICES = { AGAINST: 0, FOR: 1, ABSTAIN: 2 };
 
 const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess }) => {
+  const { provider } = useWallet(); // ← uses any connected wallet, not window.ethereum
   const [voting, setVoting]     = useState(false);
   const [error, setError]       = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -30,10 +32,9 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
     setError('');
     setVoting(true);
     try {
-      if (!window.ethereum) throw new Error('MetaMask not installed');
+      if (!provider) throw new Error('Wallet not connected');
       if (!contractAddress || contractAddress === '0x...' || !ethers.isAddress(contractAddress))
         throw new Error('Contract address not configured');
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       const tx = await contract.vote(proposal.id, choice);
@@ -53,7 +54,7 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
 
   const handleFinalize = async () => {
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      if (!provider) throw new Error('Wallet not connected');
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       const tx = await contract.finalizeProposal(proposal.id);
@@ -65,7 +66,7 @@ const ProposalCard = ({ proposal, contractAddress, userAddress, onVoteSuccess })
 
   const handleExecute = async () => {
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      if (!provider) throw new Error('Wallet not connected');
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       const tx = await contract.executeProposal(proposal.id);

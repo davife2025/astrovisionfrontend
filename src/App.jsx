@@ -1,6 +1,15 @@
 // src/App.jsx - FULLY FIXED VERSION
 
 import React, { useState, useRef } from 'react';
+import {
+  MdOutlineSearchOff,
+  MdPeople,
+  MdOutlineThumbUp,
+  MdOutlineRocketLaunch,
+  MdOutlineAutoFixHigh,
+  MdOutlineLanguage,
+  MdOutlineExitToApp,
+} from 'react-icons/md';
 import './App.css';
 
 // Components
@@ -27,6 +36,10 @@ import { useSpaceSimulation } from './hooks/useSpaceSimulation';
 // Utils
 import { cleanAIResponse } from './utils/helpers';
 import { ERROR_MESSAGES } from './utils/constants';
+
+import { WalletProvider } from './context/WalletContext';
+
+
 
 
 
@@ -231,12 +244,12 @@ function App() {
         <br></br><br></br>
                     <h1 className="header-title"> AstroVision</h1>
 
-                    <button onClick={() => setActiveTab('home')} className={`nav-button desktop-nav-btn ${activeTab === 'home' ? 'active' : ''}`}> Observation</button>
-                    <button onClick={() => setActiveTab('avdao')} className={`nav-button desktop-nav-btn ${activeTab === 'avdao' ? 'active' : ''}`}> Community</button>
-                    <button onClick={() => setActiveTab('daodashboard')} className={`nav-button desktop-nav-btn ${activeTab === 'daodashboard' ? 'active' : ''}`}>Vote</button>
-                    <button onClick={() => setActiveTab('space')} className={`nav-button desktop-nav-btn ${activeTab === 'space' ? 'active' : ''}`}> Space Lab</button>
-                    <button onClick={() => setActiveTab('playground')} className={`nav-button desktop-nav-btn ${activeTab === 'playground' ? 'active' : ''}`}> Playground</button>
-                    <button onClick={() => setActiveTab('mars')} className={`nav-button desktop-nav-btn ${activeTab === 'mars' ? 'active' : ''}`}> Mars</button>
+                    <button onClick={() => setActiveTab('home')} className={`nav-button desktop-nav-btn ${activeTab === 'home' ? 'active' : ''}`}><MdOutlineSearchOff size={16} /> Observation</button>
+                    <button onClick={() => setActiveTab('avdao')} className={`nav-button desktop-nav-btn ${activeTab === 'avdao' ? 'active' : ''}`}><MdPeople size={16} /> Community</button>
+                    <button onClick={() => setActiveTab('daodashboard')} className={`nav-button desktop-nav-btn ${activeTab === 'daodashboard' ? 'active' : ''}`}><MdOutlineThumbUp size={16} /> Vote</button>
+                    <button onClick={() => setActiveTab('space')} className={`nav-button desktop-nav-btn ${activeTab === 'space' ? 'active' : ''}`}><MdOutlineRocketLaunch size={16} /> Space Lab</button>
+                    <button onClick={() => setActiveTab('playground')} className={`nav-button desktop-nav-btn ${activeTab === 'playground' ? 'active' : ''}`}><MdOutlineAutoFixHigh size={16} /> Playground</button>
+                    <button onClick={() => setActiveTab('mars')} className={`nav-button desktop-nav-btn ${activeTab === 'mars' ? 'active' : ''}`}><MdOutlineLanguage size={16} /> Mars</button>
     
                   </div>
                 </div>
@@ -273,22 +286,22 @@ function App() {
             )}
 
             <button onClick={() => handleTabChange('home')} className={`menu-item ${activeTab === 'home' ? 'active' : ''}`}>
-              <span></span> Observation
+              <MdOutlineSearchOff size={18} /> Observation
             </button>
             <button onClick={() => handleTabChange('avdao')} className={`menu-item ${activeTab === 'avdao' ? 'active' : ''}`}>
-              <span></span> Community
+              <MdPeople size={18} /> Community
             </button>
             <button onClick={() => handleTabChange('daodashboard')} className={`menu-item ${activeTab === 'daodashboard' ? 'active' : ''}`}>
-              <span></span> Vote
+              <MdOutlineThumbUp size={18} /> Vote
             </button>
             <button onClick={() => handleTabChange('space')} className={`menu-item ${activeTab === 'space' ? 'active' : ''}`}>
-              <span></span> Space Lab
+              <MdOutlineRocketLaunch size={18} /> Space Lab
             </button>
             <button onClick={() => handleTabChange('playground')} className={`menu-item ${activeTab === 'playground' ? 'active' : ''}`}>
-              <span></span> Playground
+              <MdOutlineAutoFixHigh size={18} /> Playground
             </button>
             <button onClick={() => handleTabChange('mars')} className={`menu-item ${activeTab === 'mars' ? 'active' : ''}`}>
-              <span></span> Mars
+              <MdOutlineLanguage size={18} /> Mars
             </button>
   
             
@@ -297,7 +310,7 @@ function App() {
               <>
                 <div className="menu-divider" />
                 <button onClick={handleSignOut} className="menu-item danger">
-                  <span></span> Sign Out
+                  <MdOutlineExitToApp size={18} /> Sign Out
                 </button>
               </>
             )}
@@ -307,14 +320,14 @@ function App() {
 
       {activeTab === 'home' && <ObservationTab responses={responses} loading={loading} loadingStage={loadingStage} />}
       {activeTab === 'space' && <SpaceSimulation handTrackingEnabled={handTrackingEnabled} handStatus={handStatus} onToggleHandTracking={toggleHandTracking} selectedShape={selectedShape} shapes={shapes} onShapeChange={changeShape} loading={loading} loadingStage={loadingStage} />}
-      {activeTab === 'avdao' && (
+      {activeTab === 'avdao' && ( 
         <main className="main-content dao">
           <DAO onViewProfile={openProfile} />
         </main>
       )}
-      {activeTab === 'daodashboard' && (
-        <main className="main-content dao">
-          <DAODashboard/>
+      {activeTab === 'daodashboard' && (  
+        <main className="main-content dao"> <WalletProvider> <DAODashboard/></WalletProvider> 
+         
         </main>
       )}
 

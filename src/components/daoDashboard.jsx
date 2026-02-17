@@ -1,26 +1,30 @@
-// src/pages/DAODashboard.jsx - WITH GLASS/BLUR THEME
+// src/pages/DAODashboard.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
 import CreateProposalForm from '../components/CreateProposalForm';
 import ProposalCard from '../components/ProposalCard';
+import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
-const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || "0x...";
+const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || '0x...';
 
 const DAODashboard = () => {
-  const [account, setAccount] = useState('');
-  const [proposals, setProposals] = useState([]);
+  // ── Wallet (any wallet, not just MetaMask) ──────────────────────────────────
+  const { account, provider, connected, connecting, walletName, connect, disconnect, error: walletError } = useWallet();
+
+  // ── Local state ─────────────────────────────────────────────────────────────
+  const [proposals, setProposals]         = useState([]);
   const [userReputation, setUserReputation] = useState(0);
   const [userVoteCount, setUserVoteCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]             = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter]               = useState('all');
 
-  // ✅ useCallback makes loadProposals/loadUserData stable references
+  // ── Load proposals — uses provider from WalletContext ───────────────────────
   const loadProposals = useCallback(async () => {
+    if (!provider) return;
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
       const count = await contract.proposalCount();
       const proposalList = [];
@@ -50,72 +54,48 @@ const DAODashboard = () => {
     } catch (error) {
       console.error('Failed to load proposals:', error);
     }
-  }, []); // no external deps — CONTRACT_ADDRESS is module-level constant
+  }, [provider]);
 
-  const loadUserData = useCallback(async (userAddress) => {
+  // ── Load user data — uses provider from WalletContext ───────────────────────
+  const loadUserData = useCallback(async () => {
+    if (!provider || !account) return;
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
       const [reputation, voteCount] = await Promise.all([
-        contract.userReputation(userAddress).catch(() => 0n),
-        contract.userVoteCount(userAddress).catch(() => 0n),
+        contract.userReputation(account).catch(() => 0n),
+        contract.userVoteCount(account).catch(() => 0n),
       ]);
       setUserReputation(Number(reputation));
       setUserVoteCount(Number(voteCount));
     } catch (error) {
       console.error('Failed to load user data:', error);
     }
-  }, []);
+  }, [provider, account]);
 
-  // ✅ useCallback with stable deps — safe to put in useEffect dep array
-  const initializeDAO = useCallback(async () => {
-    try {
-      if (!window.ethereum) {
-        console.error('MetaMask not installed');
-        return;
-      }
-
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
-
-      setAccount(accounts[0]);
-
-      if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0x...' || !ethers.isAddress(CONTRACT_ADDRESS)) {
-        throw new Error('Contract address not configured');
-      }
-
-      await loadProposals();
-      await loadUserData(accounts[0]);
-
-      window.ethereum.on('accountsChanged', (accs) => {
-        setAccount(accs[0] || '');
-        if (accs[0]) loadUserData(accs[0]);
-      });
-      window.ethereum.on('chainChanged', () => window.location.reload());
-
-    } catch (error) {
-      console.error('Initialization failed:', error);
-      alert('Failed to connect to DAO: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [loadProposals, loadUserData]); // ✅ stable because loadProposals/loadUserData are useCallback
-
-  // ✅ ESLint satisfied — initializeDAO is now a stable useCallback reference
+  // ── Load data whenever wallet connects ──────────────────────────────────────
   useEffect(() => {
-    initializeDAO();
-  }, [initializeDAO]);
+    if (!connected || !provider) return;
 
+    if (!CONTRACT_ADDRESS || CONTRACT_ADDRESS === '0x...' || !ethers.isAddress(CONTRACT_ADDRESS)) {
+      console.error('Contract address not configured');
+      return;
+    }
+
+    setLoading(true);
+    Promise.all([loadProposals(), loadUserData()])
+      .finally(() => setLoading(false));
+  }, [connected, provider, loadProposals, loadUserData]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleProposalCreated = () => {
     setShowCreateForm(false);
     loadProposals();
-    loadUserData(account);
+    loadUserData();
   };
 
   const handleVoteSuccess = () => {
     loadProposals();
-    loadUserData(account);
+    loadUserData();
   };
 
   const filteredProposals = proposals.filter(p => {
@@ -125,27 +105,51 @@ const DAODashboard = () => {
     return true;
   });
 
-  if (!window.ethereum) {
+  // ── Not connected — show connect screen ─────────────────────────────────────
+  if (!connected) {
     return (
       <div className="dao-dashboard-container">
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="dao-stat-card" style={{ maxWidth: '500px', textAlign: 'center' }}>
-            <h2 className="dao-text-primary" style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-              🦊 MetaMask Required
+          <div className="dao-stat-card" style={{ maxWidth: '480px', textAlign: 'center' }}>
+            <div style={{ fontSize: '52px', marginBottom: '16px' }}>🔗</div>
+            <h2 className="dao-text-primary" style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
+              Connect Your Wallet
             </h2>
-            <p className="dao-text-secondary" style={{ marginBottom: '24px' }}>
-              Please install MetaMask browser extension to participate in DAO governance
+            <p className="dao-text-secondary" style={{ marginBottom: '8px' }}>
+              Connect any wallet to participate in AstroDAO governance.
             </p>
-            <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer"
-              className="submit-button-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              Install MetaMask
-            </a>
+            <p className="dao-text-dim" style={{ fontSize: '13px', marginBottom: '28px' }}>
+              Supports MetaMask, Coinbase Wallet, Brave Wallet, Rabby, and any EIP-6963 wallet.
+            </p>
+
+            {walletError && (
+              <div style={{
+                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+                borderRadius: '10px', padding: '12px 16px', marginBottom: '20px',
+                color: '#fca5a5', fontSize: '14px',
+              }}>
+                {walletError}
+              </div>
+            )}
+
+            <button onClick={connect} disabled={connecting}
+              className="submit-button-primary"
+              style={{ width: '100%', fontSize: '16px', padding: '14px' }}>
+              {connecting ? '🔄 Connecting...' : '🔗 Connect Wallet'}
+            </button>
+
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '16px' }}>
+              Don't have a wallet?{' '}
+              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer"
+                style={{ color: '#818cf8' }}>Get MetaMask</a>
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
+  // ── Connected — show dashboard ───────────────────────────────────────────────
   return (
     <div className="dao-dashboard-container">
 
@@ -159,14 +163,48 @@ const DAODashboard = () => {
               </h1>
               <p className="dao-text-secondary">Decentralized governance for research topics</p>
             </div>
-            <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
-              ✨ Create Proposal
-            </button>
+
+            {/* Right side — wallet info + buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+
+              {/* Wallet badge */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                borderRadius: '10px', padding: '8px 14px',
+              }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80' }} />
+                <span style={{ color: '#c7d2fe', fontSize: '13px', fontFamily: 'monospace' }}>
+                  {walletName && <span style={{ color: 'rgba(255,255,255,0.5)', marginRight: '6px' }}>{walletName} ·</span>}
+                  {account.substring(0, 6)}...{account.substring(38)}
+                </span>
+              </div>
+
+              {/* Disconnect button */}
+              <button
+                onClick={disconnect}
+                style={{
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: '10px', padding: '8px 16px',
+                  color: '#fca5a5', fontSize: '13px', fontWeight: '600',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+              >
+                Disconnect
+              </button>
+
+              <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
+                ✨ Create Proposal
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ SCROLL FIX: this wrapper has no overflow:hidden — content scrolls freely */}
+      {/* Main content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
 
         {/* Stats */}
@@ -175,8 +213,9 @@ const DAODashboard = () => {
           <div className="dao-stat-card">
             <p className="dao-text-dim" style={{ fontSize: '14px', marginBottom: '8px' }}>Connected Account</p>
             <p className="dao-text-primary" style={{ fontSize: '12px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-              {account ? `${account.substring(0, 6)}...${account.substring(38)}` : 'Not connected'}
+              {account.substring(0, 6)}...{account.substring(38)}
             </p>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '4px' }}>{walletName}</p>
           </div>
 
           <div className="dao-stat-card" style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}>

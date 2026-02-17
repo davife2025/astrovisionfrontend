@@ -2,9 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
+import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
 const UserProfile = ({ contractAddress, userAddress }) => {
+  const { provider } = useWallet(); // ← uses any connected wallet, not window.ethereum
+
   const [reputation, setReputation]       = useState(0);
   const [voteCount, setVoteCount]         = useState(0);
   const [delegate, setDelegate]           = useState('');
@@ -12,9 +15,8 @@ const UserProfile = ({ contractAddress, userAddress }) => {
   const [loading, setLoading]             = useState(false);
 
   const loadUserData = useCallback(async () => {
-    if (!userAddress) return;
+    if (!userAddress || !provider) return;
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(contractAddress, ABI, provider);
       const [rep, votes, delegateAddr] = await Promise.all([
         contract.userReputation(userAddress),
@@ -27,16 +29,16 @@ const UserProfile = ({ contractAddress, userAddress }) => {
     } catch (err) {
       console.error('Error loading user data:', err);
     }
-  }, [userAddress, contractAddress]);
+  }, [userAddress, contractAddress, provider]);
 
   useEffect(() => { loadUserData(); }, [loadUserData]);
 
   const handleDelegate = async () => {
-    if (!delegateInput.trim())          { alert('Please enter a delegate address'); return; }
-    if (!ethers.isAddress(delegateInput)) { alert('Invalid Ethereum address'); return; }
+    if (!delegateInput.trim())              { alert('Please enter a delegate address'); return; }
+    if (!ethers.isAddress(delegateInput))   { alert('Invalid Ethereum address'); return; }
+    if (!provider)                          { alert('Wallet not connected'); return; }
     try {
       setLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       const tx = await contract.delegate(delegateInput);
@@ -54,9 +56,9 @@ const UserProfile = ({ contractAddress, userAddress }) => {
   };
 
   const handleUndelegate = async () => {
+    if (!provider) { alert('Wallet not connected'); return; }
     try {
       setLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       const tx = await contract.undelegate();

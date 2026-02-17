@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
+import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
 const PROPOSAL_TYPES = [
@@ -13,6 +14,8 @@ const PROPOSAL_TYPES = [
 ];
 
 const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClose }) => {
+  const { provider } = useWallet(); // ← uses any connected wallet, not window.ethereum
+
   const [formData, setFormData] = useState({
     type:'0', title:'', description:'', ipfsHash:'', quickVote:true,
   });
@@ -35,12 +38,15 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
       setError('Contract address is not configured. Add REACT_APP_DAO_CONTRACT_ADDRESS to your .env file.');
       return;
     }
+    if (!provider) {
+      setError('Wallet not connected. Please connect your wallet first.');
+      return;
+    }
 
     try {
       setLoading(true);
-      if (!window.ethereum) throw new Error('MetaMask not installed');
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      // Use the provider from WalletContext — works with any wallet
       const signer   = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
@@ -68,10 +74,7 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
   const selectedType = PROPOSAL_TYPES.find(t => t.value === formData.type);
 
   return (
-    // Full-screen overlay — clicking outside closes modal
     <div className="cpf-overlay" onClick={onClose}>
-
-      {/* Modal — stops click propagation, scrollable */}
       <div className="cpf-modal" onClick={e => e.stopPropagation()}>
 
         {/* Sticky header */}
@@ -86,7 +89,6 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
         {/* Form body */}
         <div className="cpf-body">
 
-          {/* Error */}
           {error && (
             <div className="cpf-error">
               <span>⚠️</span>
@@ -94,7 +96,6 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
             </div>
           )}
 
-          {/* Reputation warning */}
           {userReputation < 3 && (
             <div className="cpf-rep-warning">
               You need <strong>3 reputation</strong> to create proposals.
@@ -176,7 +177,6 @@ const CreateProposalForm = ({ contractAddress, userReputation, onSuccess, onClos
                   onChange={e => setFormData(p => ({ ...p, quickVote:e.target.checked }))}
                   disabled={loading}
                   style={{ position:'absolute', opacity:0, width:0, height:0 }} />
-                {/* Custom toggle track */}
                 <div style={{
                   width:'44px', height:'24px', borderRadius:'12px', position:'relative',
                   background: formData.quickVote ? '#6366f1' : 'rgba(255,255,255,0.12)',

@@ -1,6 +1,7 @@
 // src/components/InputArea.jsx
 
 import React from 'react';
+import { MdOutlineImage, MdArrowForward } from 'react-icons/md';
 
 const InputArea = ({ 
   prompt, 
@@ -55,9 +56,9 @@ const InputArea = ({
           onClick={() => fileInputRef.current?.click()}
           aria-label="Upload image"
           disabled={loading}
-          title="Add document"
+          title="Add image"
         >
-          📎
+          <MdOutlineImage size={22} />
         </button>
 
         <textarea
@@ -77,7 +78,7 @@ const InputArea = ({
           aria-label="Submit"
           title="Send"
         >
-          {loading ? '⏳' : '➤'}
+          {loading ? '⏳' : <MdArrowForward size={22} />}
         </button>
       </div>
     </div>
