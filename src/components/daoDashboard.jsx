@@ -1,10 +1,14 @@
-// src/pages/DAODashboard.jsx - COMPLETE WITH USERPROFILE SIDEBAR
+// src/pages/DAODashboard.jsx - FULLY SYNCED WITH ALL COMPONENTS
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
 import CreateProposalForm from '../components/CreateProposalForm';
 import ProposalCard from '../components/ProposalCard';
-import UserProfile from '../components/UserProfile'; // ✅ ADDED
+import UserProfile from '../components/UserProfile';
+import AdminPanel from '../components/AdminPanel';
+import DiscoveryRegistry from '../components/DiscoveryRegistry';
+import GovernanceSettings from '../components/GovernanceSettings';
+import WeeklyThemeDisplay from '../components/WeeklyThemeDisplay';
 import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
@@ -13,13 +17,29 @@ const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || '0x...';
 const DAODashboard = () => {
   const { account, provider, connected, connecting, walletName, connect, disconnect, error: walletError } = useWallet();
 
-  const [proposals, setProposals]         = useState([]);
+  // State management
+  const [proposals, setProposals] = useState([]);
   const [userReputation, setUserReputation] = useState(0);
   const [userVoteCount, setUserVoteCount] = useState(0);
-  const [loading, setLoading]             = useState(false);
+  const [ownerAddress, setOwnerAddress] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [filter, setFilter]               = useState('all');
+  const [filter, setFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('proposals'); // proposals, discoveries, governance, admin
 
+  // Load contract owner
+  const loadOwner = useCallback(async () => {
+    if (!provider) return;
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+      const owner = await contract.owner();
+      setOwnerAddress(owner);
+    } catch (error) {
+      console.error('Failed to load owner:', error);
+    }
+  }, [provider]);
+
+  // Load proposals
   const loadProposals = useCallback(async () => {
     if (!provider) return;
     try {
@@ -54,6 +74,7 @@ const DAODashboard = () => {
     }
   }, [provider]);
 
+  // Load user data
   const loadUserData = useCallback(async () => {
     if (!provider || !account) return;
     try {
@@ -69,6 +90,7 @@ const DAODashboard = () => {
     }
   }, [provider, account]);
 
+  // Initial load
   useEffect(() => {
     if (!connected || !provider) return;
 
@@ -78,10 +100,11 @@ const DAODashboard = () => {
     }
 
     setLoading(true);
-    Promise.all([loadProposals(), loadUserData()])
+    Promise.all([loadProposals(), loadUserData(), loadOwner()])
       .finally(() => setLoading(false));
-  }, [connected, provider, loadProposals, loadUserData]);
+  }, [connected, provider, loadProposals, loadUserData, loadOwner]);
 
+  // Event handlers
   const handleProposalCreated = () => {
     setShowCreateForm(false);
     loadProposals();
@@ -100,6 +123,9 @@ const DAODashboard = () => {
     return true;
   });
 
+  const isOwner = account?.toLowerCase() === ownerAddress?.toLowerCase();
+
+  // Not connected state
   if (!connected) {
     return (
       <div className="dao-dashboard-container">
@@ -228,7 +254,31 @@ const DAODashboard = () => {
           </div>
         </div>
 
-        {/* ✅ NEW: Two-column layout with UserProfile sidebar */}
+        {/* Weekly Theme Display */}
+        <div style={{ marginBottom: '32px' }}>
+          <WeeklyThemeDisplay contractAddress={CONTRACT_ADDRESS} />
+        </div>
+
+        {/* Navigation Tabs */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap', borderBottom: '2px solid rgba(255,255,255,0.1)', paddingBottom: '12px' }}>
+          {[
+            { key: 'proposals', label: '📋 Proposals', show: true },
+            { key: 'discoveries', label: '🔬 Discoveries', show: true },
+            { key: 'governance', label: '⚖️ Governance', show: isOwner },
+            { key: 'admin', label: '⚙️ Admin', show: isOwner },
+          ].filter(tab => tab.show).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`filter-tab ${activeTab === tab.key ? 'active' : ''}`}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Two-column layout */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'minmax(0, 1fr) 360px', 
@@ -237,71 +287,97 @@ const DAODashboard = () => {
         }}
         className="dao-layout-grid">
           
-          {/* LEFT COLUMN: Filter + Proposals */}
+          {/* LEFT COLUMN: Main Content */}
           <div>
             
-            {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-              {[
-                { key: 'all',      label: 'All Proposals', count: proposals.length },
-                { key: 'active',   label: '🟢 Active',     count: proposals.filter(p => p.status === 1).length },
-                { key: 'passed',   label: '✅ Passed',      count: proposals.filter(p => p.status === 2).length },
-                { key: 'rejected', label: '❌ Rejected',    count: proposals.filter(p => p.status === 3).length },
-              ].map(tab => (
-                <button key={tab.key} onClick={() => setFilter(tab.key)}
-                  className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
-                  style={{ whiteSpace: 'nowrap' }}>
-                  {tab.label} <span style={{ opacity: 0.6 }}>({tab.count})</span>
-                </button>
-              ))}
-            </div>
+            {/* PROPOSALS TAB */}
+            {activeTab === 'proposals' && (
+              <>
+                {/* Filter Tabs */}
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'all',      label: 'All Proposals', count: proposals.length },
+                    { key: 'active',   label: '🟢 Active',     count: proposals.filter(p => p.status === 1).length },
+                    { key: 'passed',   label: '✅ Passed',      count: proposals.filter(p => p.status === 2).length },
+                    { key: 'rejected', label: '❌ Rejected',    count: proposals.filter(p => p.status === 3).length },
+                  ].map(tab => (
+                    <button key={tab.key} onClick={() => setFilter(tab.key)}
+                      className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
+                      style={{ whiteSpace: 'nowrap' }}>
+                      {tab.label} <span style={{ opacity: 0.6 }}>({tab.count})</span>
+                    </button>
+                  ))}
+                </div>
 
-            {/* Loading */}
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div className="spinner-glass" style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
-                <p className="dao-text-secondary">Loading proposals from blockchain...</p>
-                <p className="dao-text-dim" style={{ fontSize: '14px', marginTop: '8px' }}>
-                  Contract: {CONTRACT_ADDRESS.substring(0, 10)}...
-                </p>
-              </div>
-            )}
-
-            {/* Empty state */}
-            {!loading && filteredProposals.length === 0 && (
-              <div className="empty-state-glass">
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔭</div>
-                <h3 className="dao-text-primary" style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-                  {filter === 'all' ? 'No Proposals Yet' : `No ${filter} proposals`}
-                </h3>
-                <p className="dao-text-secondary" style={{ marginBottom: '24px' }}>
-                  {filter === 'all' ? 'Be the first to create a research proposal!' : `No proposals with ${filter} status found`}
-                </p>
-                {filter === 'all' && (
-                  <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
-                    🚀 Create First Proposal
-                  </button>
+                {/* Loading */}
+                {loading && (
+                  <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <div className="spinner-glass" style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
+                    <p className="dao-text-secondary">Loading proposals from blockchain...</p>
+                    <p className="dao-text-dim" style={{ fontSize: '14px', marginTop: '8px' }}>
+                      Contract: {CONTRACT_ADDRESS.substring(0, 10)}...
+                    </p>
+                  </div>
                 )}
-              </div>
+
+                {/* Empty state */}
+                {!loading && filteredProposals.length === 0 && (
+                  <div className="empty-state-glass">
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔭</div>
+                    <h3 className="dao-text-primary" style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
+                      {filter === 'all' ? 'No Proposals Yet' : `No ${filter} proposals`}
+                    </h3>
+                    <p className="dao-text-secondary" style={{ marginBottom: '24px' }}>
+                      {filter === 'all' ? 'Be the first to create a research proposal!' : `No proposals with ${filter} status found`}
+                    </p>
+                    {filter === 'all' && (
+                      <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
+                        🚀 Create First Proposal
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Proposals */}
+                {!loading && filteredProposals.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {filteredProposals.map(proposal => (
+                      <ProposalCard
+                        key={proposal.id}
+                        proposal={proposal}
+                        contractAddress={CONTRACT_ADDRESS}
+                        userAddress={account}
+                        onVoteSuccess={handleVoteSuccess}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Proposals - single column layout */}
-            {!loading && filteredProposals.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {filteredProposals.map(proposal => (
-                  <ProposalCard
-                    key={proposal.id}
-                    proposal={proposal}
-                    contractAddress={CONTRACT_ADDRESS}
-                    userAddress={account}
-                    onVoteSuccess={handleVoteSuccess}
-                  />
-                ))}
-              </div>
+            {/* DISCOVERIES TAB */}
+            {activeTab === 'discoveries' && (
+              <DiscoveryRegistry contractAddress={CONTRACT_ADDRESS} />
+            )}
+
+            {/* GOVERNANCE TAB */}
+            {activeTab === 'governance' && isOwner && (
+              <GovernanceSettings 
+                contractAddress={CONTRACT_ADDRESS}
+                ownerAddress={ownerAddress}
+              />
+            )}
+
+            {/* ADMIN TAB */}
+            {activeTab === 'admin' && isOwner && (
+              <AdminPanel 
+                contractAddress={CONTRACT_ADDRESS}
+                ownerAddress={ownerAddress}
+              />
             )}
           </div>
 
-          {/* ✅ RIGHT COLUMN: UserProfile Sidebar */}
+          {/* RIGHT COLUMN: UserProfile Sidebar */}
           <aside style={{ position: 'sticky', top: '100px' }} className="dao-sidebar">
             <UserProfile 
               contractAddress={CONTRACT_ADDRESS}
@@ -327,7 +403,7 @@ const DAODashboard = () => {
         </div>
       )}
 
-      {/* ✅ Responsive CSS for mobile */}
+      {/* Responsive CSS */}
       <style>{`
         @media (max-width: 1024px) {
           .dao-layout-grid {
