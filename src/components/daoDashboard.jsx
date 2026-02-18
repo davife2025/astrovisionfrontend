@@ -1,19 +1,18 @@
-// src/pages/DAODashboard.jsx
+// src/pages/DAODashboard.jsx - COMPLETE WITH USERPROFILE SIDEBAR
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { ABI } from '../contracts/AstroDAO-ABI';
 import CreateProposalForm from '../components/CreateProposalForm';
 import ProposalCard from '../components/ProposalCard';
+import UserProfile from '../components/UserProfile'; // ✅ ADDED
 import { useWallet } from '../context/WalletContext';
 import './dao-glass-theme.css';
 
 const CONTRACT_ADDRESS = process.env.REACT_APP_DAO_CONTRACT_ADDRESS || '0x...';
 
 const DAODashboard = () => {
-  // ── Wallet (any wallet, not just MetaMask) ──────────────────────────────────
   const { account, provider, connected, connecting, walletName, connect, disconnect, error: walletError } = useWallet();
 
-  // ── Local state ─────────────────────────────────────────────────────────────
   const [proposals, setProposals]         = useState([]);
   const [userReputation, setUserReputation] = useState(0);
   const [userVoteCount, setUserVoteCount] = useState(0);
@@ -21,7 +20,6 @@ const DAODashboard = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [filter, setFilter]               = useState('all');
 
-  // ── Load proposals — uses provider from WalletContext ───────────────────────
   const loadProposals = useCallback(async () => {
     if (!provider) return;
     try {
@@ -56,7 +54,6 @@ const DAODashboard = () => {
     }
   }, [provider]);
 
-  // ── Load user data — uses provider from WalletContext ───────────────────────
   const loadUserData = useCallback(async () => {
     if (!provider || !account) return;
     try {
@@ -72,7 +69,6 @@ const DAODashboard = () => {
     }
   }, [provider, account]);
 
-  // ── Load data whenever wallet connects ──────────────────────────────────────
   useEffect(() => {
     if (!connected || !provider) return;
 
@@ -86,7 +82,6 @@ const DAODashboard = () => {
       .finally(() => setLoading(false));
   }, [connected, provider, loadProposals, loadUserData]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleProposalCreated = () => {
     setShowCreateForm(false);
     loadProposals();
@@ -105,7 +100,6 @@ const DAODashboard = () => {
     return true;
   });
 
-  // ── Not connected — show connect screen ─────────────────────────────────────
   if (!connected) {
     return (
       <div className="dao-dashboard-container">
@@ -149,7 +143,6 @@ const DAODashboard = () => {
     );
   }
 
-  // ── Connected — show dashboard ───────────────────────────────────────────────
   return (
     <div className="dao-dashboard-container">
 
@@ -164,10 +157,7 @@ const DAODashboard = () => {
               <p className="dao-text-secondary">Decentralized governance for research topics</p>
             </div>
 
-            {/* Right side — wallet info + buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-
-              {/* Wallet badge */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
@@ -180,7 +170,6 @@ const DAODashboard = () => {
                 </span>
               </div>
 
-              {/* Disconnect button */}
               <button
                 onClick={disconnect}
                 style={{
@@ -207,7 +196,7 @@ const DAODashboard = () => {
       {/* Main content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
 
-        {/* Stats */}
+        {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
 
           <div className="dao-stat-card">
@@ -239,65 +228,87 @@ const DAODashboard = () => {
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-          {[
-            { key: 'all',      label: 'All Proposals', count: proposals.length },
-            { key: 'active',   label: '🟢 Active',     count: proposals.filter(p => p.status === 1).length },
-            { key: 'passed',   label: '✅ Passed',      count: proposals.filter(p => p.status === 2).length },
-            { key: 'rejected', label: '❌ Rejected',    count: proposals.filter(p => p.status === 3).length },
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setFilter(tab.key)}
-              className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
-              style={{ whiteSpace: 'nowrap' }}>
-              {tab.label} <span style={{ opacity: 0.6 }}>({tab.count})</span>
-            </button>
-          ))}
-        </div>
+        {/* ✅ NEW: Two-column layout with UserProfile sidebar */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'minmax(0, 1fr) 360px', 
+          gap: '32px',
+          alignItems: 'start'
+        }}
+        className="dao-layout-grid">
+          
+          {/* LEFT COLUMN: Filter + Proposals */}
+          <div>
+            
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+              {[
+                { key: 'all',      label: 'All Proposals', count: proposals.length },
+                { key: 'active',   label: '🟢 Active',     count: proposals.filter(p => p.status === 1).length },
+                { key: 'passed',   label: '✅ Passed',      count: proposals.filter(p => p.status === 2).length },
+                { key: 'rejected', label: '❌ Rejected',    count: proposals.filter(p => p.status === 3).length },
+              ].map(tab => (
+                <button key={tab.key} onClick={() => setFilter(tab.key)}
+                  className={`filter-tab ${filter === tab.key ? 'active' : ''}`}
+                  style={{ whiteSpace: 'nowrap' }}>
+                  {tab.label} <span style={{ opacity: 0.6 }}>({tab.count})</span>
+                </button>
+              ))}
+            </div>
 
-        {/* Loading */}
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div className="spinner-glass" style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
-            <p className="dao-text-secondary">Loading proposals from blockchain...</p>
-            <p className="dao-text-dim" style={{ fontSize: '14px', marginTop: '8px' }}>
-              Contract: {CONTRACT_ADDRESS.substring(0, 10)}...
-            </p>
-          </div>
-        )}
+            {/* Loading */}
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div className="spinner-glass" style={{ width: '48px', height: '48px', margin: '0 auto 16px' }} />
+                <p className="dao-text-secondary">Loading proposals from blockchain...</p>
+                <p className="dao-text-dim" style={{ fontSize: '14px', marginTop: '8px' }}>
+                  Contract: {CONTRACT_ADDRESS.substring(0, 10)}...
+                </p>
+              </div>
+            )}
 
-        {/* Empty state */}
-        {!loading && filteredProposals.length === 0 && (
-          <div className="empty-state-glass">
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔭</div>
-            <h3 className="dao-text-primary" style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-              {filter === 'all' ? 'No Proposals Yet' : `No ${filter} proposals`}
-            </h3>
-            <p className="dao-text-secondary" style={{ marginBottom: '24px' }}>
-              {filter === 'all' ? 'Be the first to create a research proposal!' : `No proposals with ${filter} status found`}
-            </p>
-            {filter === 'all' && (
-              <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
-                🚀 Create First Proposal
-              </button>
+            {/* Empty state */}
+            {!loading && filteredProposals.length === 0 && (
+              <div className="empty-state-glass">
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔭</div>
+                <h3 className="dao-text-primary" style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  {filter === 'all' ? 'No Proposals Yet' : `No ${filter} proposals`}
+                </h3>
+                <p className="dao-text-secondary" style={{ marginBottom: '24px' }}>
+                  {filter === 'all' ? 'Be the first to create a research proposal!' : `No proposals with ${filter} status found`}
+                </p>
+                {filter === 'all' && (
+                  <button onClick={() => setShowCreateForm(true)} className="submit-button-primary">
+                    🚀 Create First Proposal
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Proposals - single column layout */}
+            {!loading && filteredProposals.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {filteredProposals.map(proposal => (
+                  <ProposalCard
+                    key={proposal.id}
+                    proposal={proposal}
+                    contractAddress={CONTRACT_ADDRESS}
+                    userAddress={account}
+                    onVoteSuccess={handleVoteSuccess}
+                  />
+                ))}
+              </div>
             )}
           </div>
-        )}
 
-        {/* Proposals grid */}
-        {!loading && filteredProposals.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px' }}>
-            {filteredProposals.map(proposal => (
-              <ProposalCard
-                key={proposal.id}
-                proposal={proposal}
-                contractAddress={CONTRACT_ADDRESS}
-                userAddress={account}
-                onVoteSuccess={handleVoteSuccess}
-              />
-            ))}
-          </div>
-        )}
+          {/* ✅ RIGHT COLUMN: UserProfile Sidebar */}
+          <aside style={{ position: 'sticky', top: '100px' }} className="dao-sidebar">
+            <UserProfile 
+              contractAddress={CONTRACT_ADDRESS}
+              userAddress={account}
+            />
+          </aside>
+        </div>
       </div>
 
       {/* Create Proposal Modal */}
@@ -315,6 +326,19 @@ const DAODashboard = () => {
           </div>
         </div>
       )}
+
+      {/* ✅ Responsive CSS for mobile */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .dao-layout-grid {
+            grid-template-columns: 1fr !important;
+          }
+          
+          .dao-sidebar {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };
