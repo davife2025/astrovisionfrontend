@@ -115,7 +115,7 @@ const AdminPanel = ({ contractAddress, ownerAddress }) => {
 
   const handleIncrementWeek = async () => {
     if (!provider) return;
-    if (!confirm('Increment week number and reset active weekly theme?')) return;
+  if (!window.confirm('Increment week number and reset active weekly theme?')) return;
     
     setError('');
     setLoading(true);
@@ -135,7 +135,7 @@ const AdminPanel = ({ contractAddress, ownerAddress }) => {
 
   const handleEmergencyWithdraw = async () => {
     if (!provider) return;
-    if (!confirm('⚠️ EMERGENCY WITHDRAW - Are you sure? This action withdraws all contract funds to the owner.')) return;
+  if (!window.confirm('⚠️ EMERGENCY WITHDRAW - Are you sure? This action withdraws all contract funds to the owner.')) return;
     
     setError('');
     setLoading(true);
