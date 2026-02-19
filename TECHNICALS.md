@@ -1,1 +1,0 @@
-getting started on astrovision
